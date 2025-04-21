@@ -1,59 +1,82 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, User, LogIn } from 'lucide-react';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
-import { useUser } from '../../context/UserContext';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Mail, Lock, User, LogIn } from "lucide-react";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import { useUser } from "../../context/UserContext";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { register } = useUser();
-  
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { register, registerWithGoogle } = useUser();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  
+  const [error, setError] = useState("");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
-    
+
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError("Password must be at least 6 characters");
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      setError('');
-      
+      setError("");
+
       await register(name, email, password);
-      navigate('/onboarding/welcome');
+      navigate("/onboarding/welcome");
     } catch (err) {
-      setError('Registration failed. Please try again.');
+      setError("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
-  
+
+  const handleGoogleSuccess = async (res: CredentialResponse) => {
+    if (!res.credential) {
+      setError("Google sign-in failed");
+      return;
+    }
+    try {
+      setIsLoading(true);
+      await registerWithGoogle(res.credential);
+      navigate("/onboarding/welcome");
+    } catch {
+      setError("Google signup failed.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => setError("Google sign-in unsuccessful");
+
   return (
     <div>
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Create your account</h2>
-        <p className="text-gray-600 mt-2">Join OpenPrep and boost your GMAT score</p>
+        <h2 className="text-2xl font-bold text-gray-900">
+          Create your account
+        </h2>
+        <p className="text-gray-600 mt-2">
+          Join OpenPrep and boost your GMAT score
+        </p>
       </div>
-      
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
           {error}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit}>
         <div className="space-y-5">
           <Input
@@ -66,7 +89,7 @@ const Register: React.FC = () => {
             leftIcon={<User size={18} className="text-gray-500" />}
             required
           />
-          
+
           <Input
             label="Email"
             type="email"
@@ -77,7 +100,7 @@ const Register: React.FC = () => {
             leftIcon={<Mail size={18} className="text-gray-500" />}
             required
           />
-          
+
           <Input
             label="Password"
             type="password"
@@ -89,7 +112,7 @@ const Register: React.FC = () => {
             helperText="Must be at least 6 characters"
             required
           />
-          
+
           <div className="flex items-center">
             <input
               id="terms"
@@ -99,17 +122,23 @@ const Register: React.FC = () => {
               required
             />
             <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-              I agree to the{' '}
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+              I agree to the{" "}
+              <a
+                href="#"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
                 Terms of Service
-              </a>{' '}
-              and{' '}
-              <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+              </a>{" "}
+              and{" "}
+              <a
+                href="#"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
                 Privacy Policy
               </a>
             </label>
           </div>
-          
+
           <Button
             type="submit"
             className="w-full"
@@ -118,13 +147,15 @@ const Register: React.FC = () => {
           >
             Create account
           </Button>
-          
+
           <div className="relative flex py-3 items-center">
             <div className="flex-grow border-t border-gray-300"></div>
-            <span className="flex-shrink mx-4 text-gray-600 text-sm">Or continue with</span>
+            <span className="flex-shrink mx-4 text-gray-600 text-sm">
+              Or continue with
+            </span>
             <div className="flex-grow border-t border-gray-300"></div>
           </div>
-          
+
           <Button
             type="button"
             variant="outline"
@@ -133,8 +164,8 @@ const Register: React.FC = () => {
               // Mock Google sign in
               setIsLoading(true);
               setTimeout(() => {
-                register('Demo User', 'demo@example.com', 'password');
-                navigate('/onboarding/welcome');
+                register("Demo User", "demo@example.com", "password");
+                navigate("/onboarding/welcome");
                 setIsLoading(false);
               }, 1000);
             }}
@@ -160,10 +191,21 @@ const Register: React.FC = () => {
             </svg>
             Sign up with Google
           </Button>
-          
+          {/* Real Google Sign‑Up */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={handleGoogleError}
+              useOneTap
+            />
+          </div>
+
           <p className="text-center text-sm text-gray-600 mt-2">
-            Already have an account?{' '}
-            <Link to="/auth/login" className="font-medium text-blue-600 hover:text-blue-500">
+            Already have an account?{" "}
+            <Link
+              to="/auth/login"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               Sign in
             </Link>
           </p>

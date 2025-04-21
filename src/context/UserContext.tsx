@@ -1,4 +1,12 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+// src/context/UserContext.tsx
+
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  ReactNode,
+} from "react";
 
 export interface UserProfile {
   id: string;
@@ -21,20 +29,11 @@ export interface UserProfile {
   };
 }
 
-interface UserContextType {
-  user: UserProfile | null;
-  isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
-  updateProfile: (data: Partial<UserProfile>) => void;
-  completeOnboarding: () => void;
-}
-
+// A mock default user; fill in whatever makes sense for your app
 const defaultUser: UserProfile = {
-  id: '1',
-  name: 'Test User',
-  email: 'test@example.com',
+  id: "1",
+  name: "Test User",
+  email: "test@example.com",
   isOnboarded: false,
   targetScore: 700,
   examDate: null,
@@ -46,12 +45,24 @@ const defaultUser: UserProfile = {
     analytical: 4,
   },
   learningPreferences: {
-    style: ['visual', 'practice'],
+    style: ["visual", "practice"],
     weeklyHours: 10,
-    preferredTimes: ['evening'],
+    preferredTimes: ["evening"],
   },
 };
 
+interface UserContextType {
+  user: UserProfile | null;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => void;
+  updateProfile: (data: Partial<UserProfile>) => void;
+  completeOnboarding: () => void;
+  registerWithGoogle: (credential: string) => Promise<void>;
+}
+
+// Provide full defaults so createContext is happy
 const UserContext = createContext<UserContextType>({
   user: null,
   isAuthenticated: false,
@@ -60,53 +71,72 @@ const UserContext = createContext<UserContextType>({
   logout: () => {},
   updateProfile: () => {},
   completeOnboarding: () => {},
+  registerWithGoogle: async () => {},
 });
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const UserProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<UserProfile | null>(null);
 
-  // Check for stored user on mount
+  // load from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const stored = localStorage.getItem("user");
+    if (stored) setUser(JSON.parse(stored));
   }, []);
 
-  // Mock authentication functions
   const login = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // your real API call here
+    await new Promise((r) => setTimeout(r, 1000));
     setUser(defaultUser);
-    localStorage.setItem('user', JSON.stringify(defaultUser));
+    localStorage.setItem("user", JSON.stringify(defaultUser));
   };
 
   const register = async (name: string, email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // your real API call here
+    await new Promise((r) => setTimeout(r, 1000));
     const newUser = { ...defaultUser, name, email };
     setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
   };
 
   const updateProfile = (data: Partial<UserProfile>) => {
-    if (user) {
-      const updatedUser = { ...user, ...data };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-    }
+    if (!user) return;
+    const updated = { ...user, ...data };
+    setUser(updated);
+    localStorage.setItem("user", JSON.stringify(updated));
   };
 
   const completeOnboarding = () => {
-    if (user) {
-      const updatedUser = { ...user, isOnboarded: true };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+    if (!user) return;
+    const updated = { ...user, isOnboarded: true };
+    setUser(updated);
+    localStorage.setItem("user", JSON.stringify(updated));
+  };
+
+  const registerWithGoogle = async (credential: string) => {
+    try {
+      // ✅ backticks around the URL!
+      const resp = await fetch(
+        `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${credential}`
+      );
+      if (!resp.ok) throw new Error("Google signup failed");
+      const data = await resp.json();
+      const newUser: UserProfile = {
+        ...defaultUser,
+        id: data.sub,
+        name: data.name,
+        email: data.email,
+      };
+      setUser(newUser);
+      localStorage.setItem("user", JSON.stringify(newUser));
+    } catch (err) {
+      console.error("Google signup error", err);
     }
   };
 
@@ -120,6 +150,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         updateProfile,
         completeOnboarding,
+        registerWithGoogle, // make sure this line is here
       }}
     >
       {children}
@@ -127,4 +158,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useUser = () => useContext(UserContext);
+export const useUser = () => {
+  const ctx = useContext(UserContext);
+  if (!ctx) throw new Error("useUser must be used inside UserProvider");
+  return ctx;
+};
