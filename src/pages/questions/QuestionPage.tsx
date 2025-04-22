@@ -15,16 +15,13 @@ import {
 import { Card, CardContent } from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import QuestionDisplay from "../../components/question/QuestionDisplay";
-import ChatMessage from "../../components/chat/ChatMessage";
-import ChatInput from "../../components/chat/ChatInput";
-import TypingIndicator from "../../components/chat/TypingIndicator";
 import { useAITutor } from "../../context/AITutorContext";
 import { sampleQuestions } from "../../data/mockData";
 
 const QuestionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { sendMessage, messages, isTyping, clearMessages } = useAITutor();
+  const { sendMessage, setScreenContext } = useAITutor();
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -33,6 +30,7 @@ const QuestionPage: React.FC = () => {
   const [showExplanation, setShowExplanation] = useState(false);
   const [isFlagged, setIsFlagged] = useState(false);
   const [showAI, setShowAI] = useState(true);
+  const currentQuestion = sampleQuestions[questionIndex];
 
   // Reset state & clear chat when question changes
   useEffect(() => {
@@ -40,7 +38,10 @@ const QuestionPage: React.FC = () => {
     setIsSubmitted(false);
     setTimeSpent(0);
     setShowExplanation(false);
-    clearMessages();
+    setScreenContext({
+      text: currentQuestion.text,
+      options: currentQuestion.options,
+    });
 
     // map `id` param to sampleQuestions index
     const idx = id === "q1" ? 0 : 1;
@@ -49,9 +50,8 @@ const QuestionPage: React.FC = () => {
     // start timer
     const timer = setInterval(() => setTimeSpent((s) => s + 1), 1000);
     return () => clearInterval(timer);
-  }, [id, clearMessages]);
+  }, [id, currentQuestion, setScreenContext]);
 
-  const currentQuestion = sampleQuestions[questionIndex];
 
   const handleSelectAnswer = (answerId: string) => {
     if (!isSubmitted) setSelectedAnswer(answerId);
@@ -62,7 +62,7 @@ const QuestionPage: React.FC = () => {
     setIsSubmitted(true);
 
     // Always pass the question text as context
-    const qText = currentQuestion.text;
+    const qText = currentQuestion;
     if (selectedAnswer === currentQuestion.correctAnswer) {
       sendMessage(
         "Great job! That's the correct answer. Would you like me to explain why?",
@@ -74,14 +74,6 @@ const QuestionPage: React.FC = () => {
         qText
       );
     }
-  };
-
-  // Local wrapper for free‐form chat input
-  const handleChatSend = (userText: string) => {
-    sendMessage(userText, {
-      text: currentQuestion.text,
-      options: currentQuestion.options,
-    });
   };
 
   const handleNextQuestion = () => {
@@ -107,7 +99,7 @@ const QuestionPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)]">
+    <div className="flex flex-col h-full">
       {/* Top Info Bar */}
       <div className="bg-white p-4 border-b flex justify-between items-center">
         <div className="flex items-center space-x-4">
@@ -149,11 +141,8 @@ const QuestionPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-6 overflow-hidden min-h-0">
-        {/* Question Area */}
-        <div
-          className={`md:col-span-${showAI ? "2" : "3"} overflow-y-auto p-6`}
-        >
+      <div className="flex-1 overflow-y-auto p-6">
+
           <QuestionDisplay
             id={currentQuestion.id}
             type={currentQuestion.type}
@@ -214,52 +203,6 @@ const QuestionPage: React.FC = () => {
             </Card>
           )}
         </div>
-
-        {/* AI Tutor Chat */}
-        {showAI && (
-          <div className="md:col-span-1 border-t md:border-t-0 md:border-l border-gray-200 flex flex-col min-h-0">
-            <div className="bg-gray-50 p-3 border-b border-gray-200">
-              <h3 className="font-medium text-gray-900">AI Tutor Assistant</h3>
-              <p className="text-sm text-gray-600">
-                Ask for hints or explanations
-              </p>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 min-h-0">
-              {messages.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <HelpCircle
-                    size={36}
-                    className="mx-auto mb-4 text-gray-400"
-                  />
-                  <p className="font-medium">Need help?</p>
-                  <p className="text-sm mt-1">
-                    Ask your AI tutor for hints or explanations without
-                    revealing the answer.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {messages.map((m) => (
-                    <ChatMessage key={m.id} role={m.role} content={m.content} />
-                  ))}
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <TypingIndicator />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="border-t border-gray-200">
-              <ChatInput
-                onSendMessage={handleChatSend}
-                isTyping={isTyping}
-                placeholder="Ask for a hint or explanation..."
-              />
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

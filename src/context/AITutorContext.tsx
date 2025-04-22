@@ -1,26 +1,31 @@
-// src/context/AITutorContext.tsx
-
-import React, { createContext, useState, useContext, useCallback } from 'react';
-import { generateId } from '../lib/utils';
-import { sendChatMessage } from '../lib/api';
+import React, { createContext, useState, useContext, useCallback } from 'react'
+import { generateId } from '../lib/utils'
+import { sendChatMessage } from '../lib/api'
 
 export interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
 }
 
 interface AITutorContextType {
-  messages: Message[];
-  isTyping: boolean;
+  messages: Message[]
+  isTyping: boolean
   /**
    * Send a message to the tutor.
    * @param content  The user's text.
-   * @param question Optional: the full question text for context.
+   * @param overrideContext Optional: override the stored screen context.
    */
-  sendMessage: (content: string, question?: Object) => Promise<void>;
-  clearMessages: () => void;
+  sendMessage: (content: string, overrideContext?: object) => Promise<void>
+  clearMessages: () => void
+
+  // screen context for current screen (e.g., question text + options)
+  screenContext: object | undefined
+  /**
+   * Set or update the screen context used in subsequent sendMessage calls
+   */
+  setScreenContext: (ctx: object) => void
 }
 
 const AITutorContext = createContext<AITutorContextType>({
@@ -28,34 +33,40 @@ const AITutorContext = createContext<AITutorContextType>({
   isTyping: false,
   sendMessage: async () => {},
   clearMessages: () => {},
-});
+  screenContext: undefined,
+  setScreenContext: () => {},
+})
 
 export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isTyping, setIsTyping] = useState(false)
+  const [screenContext, setScreenContext] = useState<object | undefined>(undefined)
 
   const sendMessage = useCallback(
-    async (content: string, question?: Object) => {
+    async (content: string, overrideContext?: object) => {
       // 1️⃣ Add the user's message locally
       const userMsg: Message = {
         id: generateId(),
         role: 'user',
         content,
         timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, userMsg]);
-      setIsTyping(true);
+      }
+      setMessages(prev => [...prev, userMsg])
+      setIsTyping(true)
 
       try {
-        const userId = localStorage.getItem('userId') || '1';
+        const userId = localStorage.getItem('userId') || '1'
+        // Determine which context to send: override or stored
+        const ctx = overrideContext ?? screenContext
+        const apiContext = ctx ? { question_text: ctx } : undefined
 
-        // 2️⃣ Call your API, passing question_text in the `context` object
+        // 2️⃣ Call your API, passing context
         const response = await sendChatMessage({
           userId,
           message: content,
           chatType: 'tutoring',
-          context: question ? { question_text: question } : undefined,
-        });
+          context: apiContext,
+        })
 
         // 3️⃣ Append the assistant's reply
         const assistantMsg: Message = {
@@ -63,10 +74,10 @@ export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({ child
           role: 'assistant',
           content: response.reply || "Sorry, I didn't catch that. Could you rephrase?",
           timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, assistantMsg]);
+        }
+        setMessages(prev => [...prev, assistantMsg])
       } catch (err) {
-        console.error('Tutor error:', err);
+        console.error('Tutor error:', err)
         setMessages(prev => [
           ...prev,
           {
@@ -75,23 +86,30 @@ export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({ child
             content: 'Oops! There was an error. Please try again.',
             timestamp: new Date(),
           },
-        ]);
+        ])
       } finally {
-        setIsTyping(false);
+        setIsTyping(false)
       }
     },
-    []
-  );
+    [screenContext]
+  )
 
   const clearMessages = useCallback(() => {
-    setMessages([]);
-  }, []);
+    setMessages([])
+  }, [])
 
   return (
-    <AITutorContext.Provider value={{ messages, isTyping, sendMessage, clearMessages }}>
+    <AITutorContext.Provider value={{
+      messages,
+      isTyping,
+      sendMessage,
+      clearMessages,
+      screenContext,
+      setScreenContext,
+    }}>
       {children}
     </AITutorContext.Provider>
-  );
-};
+  )
+}
 
-export const useAITutor = () => useContext(AITutorContext);
+export const useAITutor = () => useContext(AITutorContext)
