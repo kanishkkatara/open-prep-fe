@@ -1,12 +1,6 @@
 // src/context/UserContext.tsx
-
-import React, {
-  createContext,
-  useState,
-  useContext,
-  useEffect,
-  ReactNode,
-} from "react";
+import React, { createContext, useState, useContext, useEffect, ReactNode } from "react";
+import { loginWithGoogle, fetchCurrentUser } from "../lib/api";
 
 export interface UserProfile {
   id: string;
@@ -29,7 +23,6 @@ export interface UserProfile {
   };
 }
 
-// A mock default user; fill in whatever makes sense for your app
 const defaultUser: UserProfile = {
   id: "1",
   name: "Test User",
@@ -38,62 +31,64 @@ const defaultUser: UserProfile = {
   targetScore: 700,
   examDate: null,
   previousScore: null,
-  confidenceRatings: {
-    quantitative: 3,
-    verbal: 2,
-    integrated: 3,
-    analytical: 4,
-  },
-  learningPreferences: {
-    style: ["visual", "practice"],
-    weeklyHours: 10,
-    preferredTimes: ["evening"],
-  },
+  confidenceRatings: { quantitative: 3, verbal: 2, integrated: 3, analytical: 4 },
+  learningPreferences: { style: ["visual", "practice"], weeklyHours: 10, preferredTimes: ["evening"] },
 };
 
 interface UserContextType {
   user: UserProfile | null;
   isAuthenticated: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  updateProfile: (data: Partial<UserProfile>) => void;
-  completeOnboarding: () => void;
+  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  completeOnboarding: () => Promise<void>;
   registerWithGoogle: (credential: string) => Promise<void>;
 }
 
-// Provide full defaults so createContext is happy
 const UserContext = createContext<UserContextType>({
   user: null,
   isAuthenticated: false,
+  token: null,
   login: async () => {},
   register: async () => {},
   logout: () => {},
-  updateProfile: () => {},
-  completeOnboarding: () => {},
+  updateProfile: async () => {},
+  completeOnboarding: async () => {},
   registerWithGoogle: async () => {},
 });
 
-export const UserProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-  // load from localStorage on mount
-  useEffect(() => {
+export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<UserProfile | null>(() => {
     const stored = localStorage.getItem("user");
-    if (stored) setUser(JSON.parse(stored));
-  }, []);
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+
+  useEffect(() => {
+    if (token && !user) {
+      fetchCurrentUser(token)
+        .then((u) => {
+          const mapped = mapServerUserToProfile(u);
+          setUser(mapped);
+          localStorage.setItem("user", JSON.stringify(mapped));
+        })
+        .catch(() => {
+          logout();
+        });
+    }
+  }, [token]);
 
   const login = async (email: string, password: string) => {
-    // your real API call here
+    // backward-compatible mock login
     await new Promise((r) => setTimeout(r, 1000));
     setUser(defaultUser);
     localStorage.setItem("user", JSON.stringify(defaultUser));
   };
 
   const register = async (name: string, email: string, password: string) => {
-    // your real API call here
+    // backward-compatible mock register
     await new Promise((r) => setTimeout(r, 1000));
     const newUser = { ...defaultUser, name, email };
     setUser(newUser);
@@ -102,42 +97,37 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 
   const logout = () => {
     setUser(null);
+    setToken(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
-  const updateProfile = (data: Partial<UserProfile>) => {
-    if (!user) return;
+  const updateProfile = async (data: Partial<UserProfile>) => {
+    if (!user || !token) return;
+    await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
     const updated = { ...user, ...data };
     setUser(updated);
     localStorage.setItem("user", JSON.stringify(updated));
   };
 
-  const completeOnboarding = () => {
-    if (!user) return;
-    const updated = { ...user, isOnboarded: true };
-    setUser(updated);
-    localStorage.setItem("user", JSON.stringify(updated));
+  const completeOnboarding = async () => {
+    await updateProfile({ isOnboarded: true });
   };
 
   const registerWithGoogle = async (credential: string) => {
-    try {
-      // ✅ backticks around the URL!
-      const resp = await fetch(
-        `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${credential}`
-      );
-      if (!resp.ok) throw new Error("Google signup failed");
-      const data = await resp.json();
-      const newUser: UserProfile = {
-        ...defaultUser,
-        id: data.sub,
-        name: data.name,
-        email: data.email,
-      };
-      setUser(newUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
-    } catch (err) {
-      console.error("Google signup error", err);
-    }
+    // call backend login endpoint
+    const { access_token } = await loginWithGoogle(credential);
+    setToken(access_token);
+    localStorage.setItem("token", access_token);
+
+    const serverUser = await fetchCurrentUser(access_token);
+    const mapped = mapServerUserToProfile(serverUser);
+    setUser(mapped);
+    localStorage.setItem("user", JSON.stringify(mapped));
   };
 
   return (
@@ -145,12 +135,13 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
       value={{
         user,
         isAuthenticated: !!user,
+        token,
         login,
         register,
         logout,
         updateProfile,
         completeOnboarding,
-        registerWithGoogle, // make sure this line is here
+        registerWithGoogle,
       }}
     >
       {children}
@@ -158,8 +149,22 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
-export const useUser = () => {
+export const useUser = (): UserContextType => {
   const ctx = useContext(UserContext);
   if (!ctx) throw new Error("useUser must be used inside UserProvider");
   return ctx;
 };
+
+function mapServerUserToProfile(u: any): UserProfile {
+  return {
+    id: String(u.id),
+    name: u.name,
+    email: u.email,
+    isOnboarded: u.isOnboarded ?? defaultUser.isOnboarded,
+    targetScore: u.targetScore ?? defaultUser.targetScore,
+    examDate: u.examDate ? new Date(u.examDate) : null,
+    previousScore: u.previousScore ?? defaultUser.previousScore,
+    confidenceRatings: u.confidenceRatings ?? defaultUser.confidenceRatings,
+    learningPreferences: u.learningPreferences ?? defaultUser.learningPreferences,
+  };
+}
