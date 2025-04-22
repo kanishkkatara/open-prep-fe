@@ -20,10 +20,12 @@ export async function sendChatMessage({
     userId,
     message,
     chatType,
+    context,
   }: {
     userId: string;
     message: string;
     chatType: "onboarding" | "tutoring";
+    context?: object;
   }) {
     const res = await fetch(`${BASE_URL}/api/chat/message`, {
       method: "POST",
@@ -34,6 +36,7 @@ export async function sendChatMessage({
       body: JSON.stringify({
         message,
         chat_type: chatType,
+        context: context,
       }),
     });
   

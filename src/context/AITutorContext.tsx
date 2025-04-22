@@ -1,7 +1,10 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
-import { delay, generateId } from '../lib/utils';
+// src/context/AITutorContext.tsx
 
-interface Message {
+import React, { createContext, useState, useContext, useCallback } from 'react';
+import { generateId } from '../lib/utils';
+import { sendChatMessage } from '../lib/api';
+
+export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -11,7 +14,12 @@ interface Message {
 interface AITutorContextType {
   messages: Message[];
   isTyping: boolean;
-  sendMessage: (content: string) => Promise<void>;
+  /**
+   * Send a message to the tutor.
+   * @param content  The user's text.
+   * @param question Optional: the full question text for context.
+   */
+  sendMessage: (content: string, question?: Object) => Promise<void>;
   clearMessages: () => void;
 }
 
@@ -26,69 +34,61 @@ export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  // Mock responses for different types of messages
-  const getMockResponse = (userMessage: string): string => {
-    const lowerMsg = userMessage.toLowerCase();
-    
-    if (lowerMsg.includes('gmat') && lowerMsg.includes('score')) {
-      return "Based on your profile and practice performance, you're on track for a score range of 680-720. To push towards the higher end, I'd recommend focusing more on Data Sufficiency questions, where your accuracy is currently at 68%.";
-    }
-    
-    if (lowerMsg.includes('problem') || lowerMsg.includes('question') || lowerMsg.includes('stuck')) {
-      return "Let's break this down step by step. First, identify what the question is asking for. Then, look at what information you have. For this type of problem, consider whether you need to solve for the exact value or if you can work with the constraints to eliminate answer choices.";
-    }
-    
-    if (lowerMsg.includes('study') || lowerMsg.includes('plan')) {
-      return "I've adjusted your study plan based on your recent performance. I've added more practice on Critical Reasoning since you've been making good progress there, and increased focus on Quantitative Problem Solving where you need more practice. Would you like to see the updated schedule?";
-    }
-    
-    if (lowerMsg.includes('hello') || lowerMsg.includes('hi') || lowerMsg.includes('hey')) {
-      return "Hello! I'm your OpenPrep AI Assistant. How can I help with your GMAT preparation today?";
-    }
-    
-    return "I understand you're asking about " + userMessage.substring(0, 20) + "... To best help you, could you share a bit more context or specify what aspect you'd like me to address?";
-  };
+  const sendMessage = useCallback(
+    async (content: string, question?: Object) => {
+      // 1️⃣ Add the user's message locally
+      const userMsg: Message = {
+        id: generateId(),
+        role: 'user',
+        content,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, userMsg]);
+      setIsTyping(true);
 
-  const sendMessage = useCallback(async (content: string) => {
-    // Add user message
-    const userMessage: Message = {
-      id: generateId(),
-      role: 'user',
-      content,
-      timestamp: new Date(),
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    
-    // Simulate AI thinking/typing
-    setIsTyping(true);
-    await delay(1500 + Math.random() * 1500); // Random delay between 1.5-3s
-    
-    // Add AI response
-    const aiResponse: Message = {
-      id: generateId(),
-      role: 'assistant',
-      content: getMockResponse(content),
-      timestamp: new Date(),
-    };
-    
-    setMessages(prev => [...prev, aiResponse]);
-    setIsTyping(false);
-  }, []);
+      try {
+        const userId = localStorage.getItem('userId') || '1';
+
+        // 2️⃣ Call your API, passing question_text in the `context` object
+        const response = await sendChatMessage({
+          userId,
+          message: content,
+          chatType: 'tutoring',
+          context: question ? { question_text: question } : undefined,
+        });
+
+        // 3️⃣ Append the assistant's reply
+        const assistantMsg: Message = {
+          id: generateId(),
+          role: 'assistant',
+          content: response.reply || "Sorry, I didn't catch that. Could you rephrase?",
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, assistantMsg]);
+      } catch (err) {
+        console.error('Tutor error:', err);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: generateId(),
+            role: 'assistant',
+            content: 'Oops! There was an error. Please try again.',
+            timestamp: new Date(),
+          },
+        ]);
+      } finally {
+        setIsTyping(false);
+      }
+    },
+    []
+  );
 
   const clearMessages = useCallback(() => {
     setMessages([]);
   }, []);
 
   return (
-    <AITutorContext.Provider
-      value={{
-        messages,
-        isTyping,
-        sendMessage,
-        clearMessages,
-      }}
-    >
+    <AITutorContext.Provider value={{ messages, isTyping, sendMessage, clearMessages }}>
       {children}
     </AITutorContext.Provider>
   );
