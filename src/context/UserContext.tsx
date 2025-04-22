@@ -1,5 +1,11 @@
 // src/context/UserContext.tsx
-import React, { createContext, useState, useContext, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  ReactNode,
+} from "react";
 import { loginWithGoogle, fetchCurrentUser } from "../lib/api";
 
 export interface UserProfile {
@@ -31,8 +37,17 @@ const defaultUser: UserProfile = {
   targetScore: 700,
   examDate: null,
   previousScore: null,
-  confidenceRatings: { quantitative: 3, verbal: 2, integrated: 3, analytical: 4 },
-  learningPreferences: { style: ["visual", "practice"], weeklyHours: 10, preferredTimes: ["evening"] },
+  confidenceRatings: {
+    quantitative: 3,
+    verbal: 2,
+    integrated: 3,
+    analytical: 4,
+  },
+  learningPreferences: {
+    style: ["visual", "practice"],
+    weeklyHours: 10,
+    preferredTimes: ["evening"],
+  },
 };
 
 interface UserContextType {
@@ -59,12 +74,16 @@ const UserContext = createContext<UserContextType>({
   registerWithGoogle: async () => {},
 });
 
-export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const UserProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<UserProfile | null>(() => {
     const stored = localStorage.getItem("user");
     return stored ? JSON.parse(stored) : null;
   });
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("token"));
+  const [token, setToken] = useState<string | null>(() =>
+    localStorage.getItem("token")
+  );
 
   useEffect(() => {
     if (token && !user) {
@@ -106,7 +125,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!user || !token) return;
     await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify(data),
     });
     const updated = { ...user, ...data };
@@ -165,6 +187,7 @@ function mapServerUserToProfile(u: any): UserProfile {
     examDate: u.examDate ? new Date(u.examDate) : null,
     previousScore: u.previousScore ?? defaultUser.previousScore,
     confidenceRatings: u.confidenceRatings ?? defaultUser.confidenceRatings,
-    learningPreferences: u.learningPreferences ?? defaultUser.learningPreferences,
+    learningPreferences:
+      u.learningPreferences ?? defaultUser.learningPreferences,
   };
 }
