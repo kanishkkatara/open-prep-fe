@@ -1,221 +1,161 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart2, Book, Calendar, Clock, Play, PlusCircle, Target } from 'lucide-react';
+import { Book, Calendar, Clock, Play, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import ModuleCard from '../../components/dashboard/ModuleCard';
-import PerformanceChart from '../../components/dashboard/PerformanceChart';
-import TopicHeatMap from '../../components/dashboard/TopicHeatMap';
-import { useUser } from '../../context/UserContext';
-import { AITutorProvider } from '../../context/AITutorContext';
-import ChatInput from '../../components/chat/ChatInput';
-import ChatMessage from '../../components/chat/ChatMessage';
-import TypingIndicator from '../../components/chat/TypingIndicator';
-import { useAITutor } from '../../context/AITutorContext';
-import { studyModules, performanceData, topicPerformance } from '../../data/mockData';
 import ProgressCircle from '../../components/ui/ProgressCircle';
+import { useUser } from '../../context/UserContext';
+import { DashboardData, RawStudyPlanItem } from '../../lib/types';
+import { getDashboard } from '../../lib/api';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
-  
-  const handleModuleClick = (id: string) => {
-    navigate(`/app/questions/${id}`);
-  };
-  
-  return (
-    <AITutorProvider>
-      <div className="space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600">Welcome back, {user?.name}! Here's your study progress.</p>
-          </div>
-          <Button
-            leftIcon={<Play size={16} />}
-            onClick={() => navigate('/app/questions/q1')}
-          >
-            Resume Learning
-          </Button>
-        </div>
-        
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center mr-4">
-                  <Target className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Target Score</p>
-                  <h3 className="text-2xl font-bold text-gray-900">720+</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center mr-4">
-                  <Clock className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Time Studied</p>
-                  <h3 className="text-2xl font-bold text-gray-900">43.5 hours</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center mr-4">
-                  <Book className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Questions Completed</p>
-                  <h3 className="text-2xl font-bold text-gray-900">345</h3>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Study Plan and Overall Progress */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Your Study Plan</CardTitle>
-                <Button variant="outline" size="sm" leftIcon={<Calendar size={14} />}>
-                  View Full Plan
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {studyModules.slice(0, 4).map((module) => (
-                    <ModuleCard
-                      key={module.id}
-                      id={module.id}
-                      title={module.title}
-                      description={module.description}
-                      completed={module.completed}
-                      total={module.total}
-                      difficulty={module.difficulty}
-                      estimatedTime={module.estimatedTime}
-                      topics={module.topics}
-                      icon={module.icon}
-                      onClick={handleModuleClick}
-                    />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Overall Progress</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center pt-6">
-              <ProgressCircle
-                value={68}
-                size={180}
-                strokeWidth={12}
-                valueClassName="text-2xl"
-              />
-              <div className="mt-8 w-full space-y-3">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium">Quantitative</span>
-                    <span>72%</span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full">
-                    <div className="h-2 bg-blue-600 rounded-full" style={{ width: '72%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium">Verbal</span>
-                    <span>65%</span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full">
-                    <div className="h-2 bg-purple-600 rounded-full" style={{ width: '65%' }}></div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="font-medium">Integrated Reasoning</span>
-                    <span>58%</span>
-                  </div>
-                  <div className="h-2 bg-gray-200 rounded-full">
-                    <div className="h-2 bg-green-600 rounded-full" style={{ width: '58%' }}></div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PerformanceChart data={performanceData} />
-          <TopicHeatMap data={topicPerformance} />
-        </div>
-        
-        {/* AI Tutor */}
-        <DashboardAIChat />
-      </div>
-    </AITutorProvider>
-  );
-};
 
-// Separate component for AI Chat
-const DashboardAIChat: React.FC = () => {
-  const { messages, sendMessage, isTyping } = useAITutor();
-  
+  const [stats, setStats] = useState<DashboardData['stats']>({
+    targetScore: 0,
+    timeStudied: 0,
+    questionsCompleted: 0,
+  });
+  const [rawPlan, setRawPlan] = useState<RawStudyPlanItem[]>([]);
+  const [overall, setOverall] = useState<DashboardData['overallProgress']>({
+    quantitative: 0,
+    verbal: 0,
+    ir: 0,
+    average: 0,
+  });
+
+  useEffect(() => {
+    getDashboard()
+      .then(data => {
+        setStats(data.stats);
+        setRawPlan(data.studyPlan);
+        setOverall(data.overallProgress);
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleModuleClick = (id: string) => navigate(`/app/questions/${id}`);
+
+  // Map rawPlan → ModuleCard props
+  type MCP = React.ComponentProps<typeof ModuleCard>;
+  const modules: MCP[] = rawPlan.map(item => ({
+    id: item.id,
+    title: item.title,
+    description:
+      typeof item.description === 'string'
+        ? item.description
+        : JSON.stringify(item.description).slice(0, 100) + '…',
+    completed: item.completed ? 1 : 0,
+    total: item.total,
+    difficulty: item.difficulty === 1 ? 'Easy' : item.difficulty === 2 ? 'Medium' : 'Hard',
+    estimatedTime: `${item.estimatedTime}m`,
+    topics: item.topics,
+    icon: 'BookOpen',
+    onClick: handleModuleClick,
+  }));
+
   return (
-    <Card className="relative overflow-hidden border-blue-200">
-      <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <CardTitle>Ask Your AI Tutor</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="max-h-96 overflow-y-auto p-4">
-          {messages.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <BarChart2 size={36} className="mx-auto mb-4 text-gray-400" />
-              <p className="font-medium">No messages yet</p>
-              <p className="text-sm mt-1">Ask anything about GMAT preparation, your performance, or specific questions.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  role={message.role}
-                  content={message.content}
-                />
-              ))}
-              
-              {isTyping && (
-                <div className="flex justify-start">
-                  <TypingIndicator />
-                </div>
-              )}
-            </div>
-          )}
+    <main className="space-y-10 px-6 py-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="mt-1 text-gray-600">
+            Welcome back, <span className="font-medium">{user?.name}</span>! Here’s your study progress.
+          </p>
         </div>
-        
-        <ChatInput
-          onSendMessage={sendMessage}
-          isTyping={isTyping}
-          placeholder="Ask about your progress, study plan, or GMAT concepts..."
-        />
-      </CardContent>
-    </Card>
+        <Button
+          leftIcon={<Play size={18} />}
+          onClick={() => navigate('/app/questions')}
+          className="whitespace-nowrap"
+        >
+          Resume Learning
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {[ 
+          { icon: <Target />, label: 'Target Score', value: `${stats.targetScore}+`, bg: 'bg-blue-50', fg: 'text-blue-600' },
+          { icon: <Clock />, label: 'Time Studied', value: `${stats.timeStudied} hrs`, bg: 'bg-green-50', fg: 'text-green-600' },
+          { icon: <Book />, label: 'Questions Completed', value: stats.questionsCompleted, bg: 'bg-purple-50', fg: 'text-purple-600' },
+        ].map(({ icon, label, value, bg, fg }) => (
+          <Card key={label}>
+            <CardContent className="flex items-center p-4 gap-4">
+              <div className={`p-3 rounded-lg ${bg} flex items-center justify-center`}>
+                {React.cloneElement(icon as any, { className: fg, size: 20 })}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">{label}</p>
+                <h2 className="text-xl font-bold text-gray-900">{value}</h2>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Study Plan & Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Study Plan */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex items-center justify-between px-6 py-4">
+            <CardTitle>Your Study Plan</CardTitle>
+            <Button variant="outline" size="sm" leftIcon={<Calendar size={14} />} className="whitespace-nowrap">
+              Full Plan
+            </Button>
+          </CardHeader>
+          <CardContent className="px-6 py-4">
+            {modules.length === 0 ? (
+              <p className="text-center text-gray-500 py-8">No upcoming modules. Try a quick quiz!</p>
+            ) : (
+              <div className="flex space-x-4 overflow-x-auto snap-x snap-mandatory py-2 hide-scrollbar">
+                {modules.map(mod => (
+                  <div key={mod.id} className="snap-start flex-shrink-0 w-64">
+                    <ModuleCard {...mod} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Overall Progress */}
+        <Card>
+          <CardHeader className="px-6 py-4">
+            <CardTitle>Overall Progress</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center px-6 py-8">
+            <ProgressCircle value={overall.average} size={160} strokeWidth={10} valueClassName="text-xl" />
+            {overall.average === 0 ? (
+              <p className="mt-4 text-gray-500 text-sm">Answer some questions to see progress.</p>
+            ) : (
+              <div className="mt-6 w-full space-y-4">
+                {[
+                  { label: 'Quantitative', percentage: overall.quantitative },
+                  { label: 'Verbal', percentage: overall.verbal },
+                  { label: 'Integrated Reasoning', percentage: overall.ir },
+                ].map(({ label, percentage }) => (
+                  <div key={label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium text-gray-700">{label}</span>
+                      <span className="font-medium text-gray-900">{percentage}%</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full">
+                      <div
+                        className="h-2 bg-blue-500 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
 };
 

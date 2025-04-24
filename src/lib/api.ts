@@ -1,4 +1,4 @@
-import { Question } from "./types";
+import { DashboardData, Question } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -121,5 +121,16 @@ export async function fetchQuestionById(id: string): Promise<Question> {
     console.error(`Failed to fetch question ${id}:`, txt);
     throw new Error(`Failed to fetch question ${id}`);
   }
+  return res.json();
+}
+
+export async function getDashboard(): Promise<DashboardData> {
+  const res = await fetch(`${BASE_URL}/api/dashboard`, {
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Accept': 'application/json',
+    },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch dashboard: ${res.status}`);
   return res.json();
 }

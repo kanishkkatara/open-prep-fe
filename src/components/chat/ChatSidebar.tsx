@@ -16,13 +16,6 @@ const ChatSidebar: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-white">
-      {/* Header */}
-      <div className="bg-gray-50 p-3 border-b border-gray-200">
-        <h3 className="font-medium text-gray-900">AI Tutor Assistant</h3>
-        <p className="text-sm text-gray-600">
-          Ask for hints or explanations
-        </p>
-      </div>
 
       {/* Message List */}
       <div className="flex-1 overflow-y-auto p-4 min-h-0">

@@ -36,4 +36,32 @@ export interface Question {
     difficulty: number | string;
     explanation?: string;
   }
-  
+
+// Raw API item shape
+export type RawStudyPlanItem = {
+  id: string;
+  title: string;
+  description: any;
+  completed: boolean;
+  total: number;
+  difficulty: number;
+  estimatedTime: number;
+  topics: string[];
+  icon?: string;
+};
+
+// Response from /api/dashboard
+export type DashboardData = {
+  stats: {
+    targetScore: number;
+    timeStudied: number;
+    questionsCompleted: number;
+  };
+  studyPlan: RawStudyPlanItem[];
+  overallProgress: {
+    quantitative: number;
+    verbal: number;
+    ir: number;
+    average: number;
+  };
+};
