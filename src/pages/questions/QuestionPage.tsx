@@ -7,90 +7,99 @@ import {
   ChevronRight,
   Flag,
   Clock,
-  HelpCircle,
   X,
-  CheckCircle,
   Info,
 } from "lucide-react";
 import { Card, CardContent } from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import QuestionDisplay from "../../components/question/QuestionDisplay";
 import { useAITutor } from "../../context/AITutorContext";
-import { sampleQuestions } from "../../data/mockData";
+import { fetchQuestionById, submitAnswer } from "../../lib/api";
+import { useUser } from "../../context/UserContext";
+import type { Question } from "../../lib/types";
 
 const QuestionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { sendMessage, setScreenContext } = useAITutor();
+  const { user } = useUser();
 
-  const [questionIndex, setQuestionIndex] = useState(0);
+  // wait for user context
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span>Loading user…</span>
+      </div>
+    );
+  }
+
+  const [question, setQuestion] = useState<Question | null>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeSpent, setTimeSpent] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isFlagged, setIsFlagged] = useState(false);
   const [showAI, setShowAI] = useState(true);
-  const currentQuestion = sampleQuestions[questionIndex];
 
-  // Reset state & clear chat when question changes
+  // Fetch the single question when `id` changes
   useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    fetchQuestionById(id)
+      .then((q) => setQuestion(q))
+      .catch((err) => console.error("Error loading question:", err))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // Reset and push AI context when question arrives
+  useEffect(() => {
+    if (!question) return;
     setSelectedAnswer(null);
     setIsSubmitted(false);
     setTimeSpent(0);
     setShowExplanation(false);
-    setScreenContext({
-      text: currentQuestion.text,
-      options: currentQuestion.options,
-    });
 
-    // map `id` param to sampleQuestions index
-    const idx = id === "q1" ? 0 : 1;
-    setQuestionIndex(idx);
+    setScreenContext({ blocks: question.content, options: question.options });
 
-    // start timer
     const timer = setInterval(() => setTimeSpent((s) => s + 1), 1000);
     return () => clearInterval(timer);
-  }, [id, currentQuestion, setScreenContext]);
-
+  }, [question, setScreenContext]);
 
   const handleSelectAnswer = (answerId: string) => {
     if (!isSubmitted) setSelectedAnswer(answerId);
   };
 
-  const handleSubmit = () => {
-    if (!selectedAnswer) return;
+  const handleSubmit = async () => {
+    if (!question || !selectedAnswer) return;
     setIsSubmitted(true);
+    const isCorrect = selectedAnswer === question.answers.correct_option_ids?.[0];
 
-    // Always pass the question text as context
-    const qText = currentQuestion;
-    if (selectedAnswer === currentQuestion.correctAnswer) {
-      sendMessage(
-        "Great job! That's the correct answer. Would you like me to explain why?",
-        qText
-      );
-    } else {
-      sendMessage(
-        `That's not quite right. The correct answer is ${currentQuestion.correctAnswer}. Would you like me to explain why?`,
-        qText
-      );
+    // record progress
+    try {
+      await submitAnswer({
+        user_id: user.id,
+        question_id: question.id,
+        selected_option: selectedAnswer,
+        is_correct: isCorrect,
+      });
+    } catch (err) {
+      console.error("Failed to record progress", err);
     }
+
+    // trigger AI explanation
+    const reply = isCorrect
+      ? "Great job! That's the correct answer. Would you like me to explain why?"
+      : `That's not quite right. The correct answer is ${question.answers.correct_option_ids?.[0]}. Would you like me to explain why?`;
+
+    sendMessage(reply, { blocks: question.content, options: question.options });
   };
 
-  const handleNextQuestion = () => {
-    if (questionIndex < sampleQuestions.length - 1) {
-      navigate(`/app/questions/q${questionIndex + 2}`);
-    } else {
-      navigate("/app/dashboard");
-    }
+  const handleNext = () => {
+    // if you have a list of IDs, you can navigate; for now, bounce to dashboard
+    navigate("/app/dashboard");
   };
-
-  const handlePrevQuestion = () => {
-    if (questionIndex > 0) {
-      navigate(`/app/questions/q${questionIndex}`);
-    } else {
-      navigate("/app/dashboard");
-    }
-  };
+  const handlePrev = () => navigate("/app/dashboard");
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -98,9 +107,25 @@ const QuestionPage: React.FC = () => {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span>Loading question…</span>
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span>Question not found.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
-      {/* Top Info Bar */}
+      {/* Top Bar */}
       <div className="bg-white p-4 border-b flex justify-between items-center">
         <div className="flex items-center space-x-4">
           <div className="flex items-center text-gray-700">
@@ -110,19 +135,19 @@ const QuestionPage: React.FC = () => {
           <div className="hidden md:flex items-center space-x-2">
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                currentQuestion.difficulty === "Hard"
+                question.difficulty === "Hard"
                   ? "bg-red-100 text-red-800"
                   : "bg-yellow-100 text-yellow-800"
               }`}
             >
-              {currentQuestion.difficulty}
+              {question.difficulty}
             </span>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {currentQuestion.topic}
+              {question.tags[0] || "General"}
             </span>
           </div>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center space-x-2">
           <button
             className={`p-2 rounded-full ${
               isFlagged ? "text-red-500" : "text-gray-400 hover:text-gray-600"
@@ -132,77 +157,61 @@ const QuestionPage: React.FC = () => {
             <Flag size={18} />
           </button>
           <button
-            className="p-2 rounded-full text-gray-400 hover:text-gray-600 ml-2"
+            className="p-2 rounded-full text-gray-400 hover:text-gray-600"
             onClick={() => setShowAI((a) => !a)}
           >
-            {showAI ? <X size={18} /> : <HelpCircle size={18} />}
+            {showAI ? <X size={18} /> : <Info size={18} />}
           </button>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
+        <QuestionDisplay
+          id={question.id}
+          type={question.type}
+          content={question.content}
+          options={question.options}
+          selectedAnswer={selectedAnswer}
+          onSelectAnswer={handleSelectAnswer}
+          isSubmitted={isSubmitted}
+          correctAnswer={
+            Array.isArray(question.answers.correct_option_ids)
+              ? question.answers.correct_option_ids[0]
+              : null
+          }
+        />
 
-          <QuestionDisplay
-            id={currentQuestion.id}
-            type={currentQuestion.type}
-            text={currentQuestion.text}
-            options={currentQuestion.options}
-            selectedAnswer={selectedAnswer}
-            onSelectAnswer={handleSelectAnswer}
-            isSubmitted={isSubmitted}
-            correctAnswer={currentQuestion.correctAnswer}
-          />
+        <div className="flex justify-between mt-6">
+          <Button variant="outline" leftIcon={<ChevronLeft size={16} />} onClick={handlePrev}>
+            Previous
+          </Button>
 
-          <div className="flex justify-between mt-6">
-            <Button
-              variant="outline"
-              leftIcon={<ChevronLeft size={16} />}
-              onClick={handlePrevQuestion}
-            >
-              Previous
-            </Button>
-
-            {isSubmitted ? (
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  leftIcon={<Info size={16} />}
-                  onClick={() => setShowExplanation((e) => !e)}
-                >
-                  {showExplanation ? "Hide Explanation" : "Show Explanation"}
-                </Button>
-                <Button
-                  rightIcon={<ChevronRight size={16} />}
-                  onClick={handleNextQuestion}
-                >
-                  Next Question
-                </Button>
-              </div>
-            ) : (
-              <Button
-                disabled={!selectedAnswer}
-                onClick={handleSubmit}
-                leftIcon={<CheckCircle size={16} />}
-              >
-                Submit Answer
+          {isSubmitted ? (
+            <div className="flex space-x-3">
+              <Button variant="outline" leftIcon={<Info size={16} />} onClick={() => setShowExplanation((e) => !e)}>
+                {showExplanation ? "Hide Explanation" : "Show Explanation"}
               </Button>
-            )}
-          </div>
-
-          {showExplanation && (
-            <Card className="mt-6 border-green-200">
-              <CardContent className="p-5">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Explanation
-                </h3>
-                <p className="text-gray-700 whitespace-pre-line">
-                  {currentQuestion.explanation}
-                </p>
-              </CardContent>
-            </Card>
+              <Button rightIcon={<ChevronRight size={16} />} onClick={handleNext}>
+                Next
+              </Button>
+            </div>
+          ) : (
+            <Button disabled={!selectedAnswer} onClick={handleSubmit} leftIcon={<ChevronRight size={16} />}>
+              Submit Answer
+            </Button>
           )}
         </div>
+
+        {showExplanation && question.explanation && (
+          <Card className="mt-6 border-green-200">
+            <CardContent className="p-5">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Explanation</h3>
+              <p className="text-gray-700 whitespace-pre-line">{question.explanation}</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 };

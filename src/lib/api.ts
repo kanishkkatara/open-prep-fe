@@ -1,3 +1,5 @@
+import { Question } from "./types";
+
 const BASE_URL = import.meta.env.VITE_API_URL;
 
 export async function loginWithGoogle(id_token: string) {
@@ -46,3 +48,64 @@ export async function sendChatMessage({
   
     return res.json(); // { reply: string, snippets_used?: string[] }
   }
+
+  export async function fetchQuestions(limit = 100) {
+    const res = await fetch(`${BASE_URL}/api/questions?limit=${limit}`);
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("Failed to fetch questions:", text);
+      throw new Error("Failed to fetch questions");
+    }
+    return res.json();  // Question[]
+  }
+
+/** shape of the backend response */
+export interface NextQuestionResponse {
+  next_question: Question | null;
+}
+
+export async function submitAnswer(params: {
+  user_id: string;
+  question_id: string;
+  selected_option: string;
+  is_correct: boolean;
+}): Promise<NextQuestionResponse> {
+  const res = await fetch(`${BASE_URL}/api/questions/${params.question_id}/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) throw new Error("Failed to submit answer");
+  return res.json();
+}
+
+export async function fetchQuestionSummaries(params: {
+  type?: string;
+  tags?: string[];
+  difficulty?: number;
+  page?: number;
+  pageSize?: number;
+}): Promise<Question[]> {
+  const { type, tags, difficulty, page = 1, pageSize = 20 } = params;
+  const skip = (page - 1) * pageSize;
+  const qs = new URLSearchParams();
+  if (type) qs.set("type", type);
+  if (tags) tags.forEach((t) => qs.append("tags", t));
+  if (difficulty !== undefined) qs.set("difficulty", difficulty.toString());
+  qs.set("skip", skip.toString());
+  qs.set("limit", pageSize.toString());
+
+  const res = await fetch(`${BASE_URL}/api/questions?${qs.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch question summaries");
+  return res.json();
+}
+
+export async function fetchQuestionById(id: string): Promise<Question> {
+  const res = await fetch(`${BASE_URL}/api/questions/${id}`);
+  if (!res.ok) {
+    const txt = await res.text();
+    console.error(`Failed to fetch question ${id}:`, txt);
+    throw new Error(`Failed to fetch question ${id}`);
+  }
+  return res.json();
+}

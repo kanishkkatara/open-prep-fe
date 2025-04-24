@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+
 import AuthLayout from "./layouts/AuthLayout";
 import AppLayout from "./layouts/AppLayout";
 import Login from "./pages/auth/Login";
@@ -8,7 +9,9 @@ import Register from "./pages/auth/Register";
 import OnboardingWelcome from "./pages/onboarding/OnboardingWelcome";
 import OnboardingChat from "./pages/onboarding/OnboardingChat";
 import Dashboard from "./pages/dashboard/Dashboard";
+import QuestionBank from "./pages/questions/QuestionBank";
 import QuestionPage from "./pages/questions/QuestionPage";
+
 import { UserProvider } from "./context/UserContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LoadingScreen from "./components/ui/LoadingScreen";
@@ -28,7 +31,6 @@ function App() {
     return <LoadingScreen />;
   }
 
-  // use Vite env var prefix VITE_ and import.meta.env
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   if (!googleClientId) {
     console.warn("VITE_GOOGLE_CLIENT_ID is not set in .env.local");
@@ -62,6 +64,10 @@ function App() {
             }
           >
             <Route path="dashboard" element={<Dashboard />} />
+
+            {/* Question Bank (list) */}
+            <Route path="questions" element={<QuestionBank />} />
+            {/* Question Detail */}
             <Route path="questions/:id" element={<QuestionPage />} />
           </Route>
         </Routes>

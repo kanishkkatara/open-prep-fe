@@ -22,7 +22,7 @@ import ChatSidebar from '../components/chat/ChatSidebar'
 
 const navLinks = [
   { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/app/dashboard' },
-  { icon: <BookOpen size={20} />, label: 'Question Bank', path: '/app/questions/browse' },
+  { icon: <BookOpen size={20} />, label: 'Question Bank', path: '/app/questions' },
   { icon: <School size={20} />, label: 'Practice Tests', path: '/app/practice-tests' },
   { icon: <BarChart2 size={20} />, label: 'Analytics', path: '/app/analytics' },
   { icon: <Calculator size={20} />, label: 'Study Plan', path: '/app/study-plan' },
