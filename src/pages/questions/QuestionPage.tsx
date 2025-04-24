@@ -16,7 +16,7 @@ import QuestionDisplay from "../../components/question/QuestionDisplay";
 import { useAITutor } from "../../context/AITutorContext";
 import { fetchQuestionById, submitAnswer } from "../../lib/api";
 import { useUser } from "../../context/UserContext";
-import type { Question } from "../../lib/types";
+import type { Question, NextQuestionResponse } from "../../lib/types";
 
 const QuestionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,16 +24,8 @@ const QuestionPage: React.FC = () => {
   const { sendMessage, setScreenContext } = useAITutor();
   const { user } = useUser();
 
-  // wait for user context
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <span>Loading user…</span>
-      </div>
-    );
-  }
-
   const [question, setQuestion] = useState<Question | null>(null);
+  const [nextQuestion, setNextQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -42,27 +34,31 @@ const QuestionPage: React.FC = () => {
   const [isFlagged, setIsFlagged] = useState(false);
   const [showAI, setShowAI] = useState(true);
 
-  // Fetch the single question when `id` changes
+  // Load initial question
   useEffect(() => {
     if (!id) return;
     setLoading(true);
     fetchQuestionById(id)
-      .then((q) => setQuestion(q))
-      .catch((err) => console.error("Error loading question:", err))
+      .then(q => setQuestion(q))
+      .catch(console.error)
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Reset and push AI context when question arrives
+  // Reset state & push to AI whenever `question` changes
   useEffect(() => {
     if (!question) return;
     setSelectedAnswer(null);
     setIsSubmitted(false);
-    setTimeSpent(0);
     setShowExplanation(false);
+    setTimeSpent(0);
+    setNextQuestion(null);
 
-    setScreenContext({ blocks: question.content, options: question.options });
+    setScreenContext({
+      blocks: question.content,
+      options: question.options,
+    });
 
-    const timer = setInterval(() => setTimeSpent((s) => s + 1), 1000);
+    const timer = setInterval(() => setTimeSpent(s => s + 1), 1000);
     return () => clearInterval(timer);
   }, [question, setScreenContext]);
 
@@ -73,39 +69,66 @@ const QuestionPage: React.FC = () => {
   const handleSubmit = async () => {
     if (!question || !selectedAnswer) return;
     setIsSubmitted(true);
-    const isCorrect = selectedAnswer === question.answers.correct_option_ids?.[0];
 
-    // record progress
+    const isCorrect =
+      Array.isArray(question.answers.correct_option_ids) &&
+      question.answers.correct_option_ids[0] === selectedAnswer;
+
+    // record & get next question
     try {
-      await submitAnswer({
-        user_id: user.id,
+      const res: NextQuestionResponse = await submitAnswer({
+        user_id: user!.id,
         question_id: question.id,
         selected_option: selectedAnswer,
         is_correct: isCorrect,
       });
+      if (res.next_question) {
+        setNextQuestion(res.next_question);
+      }
     } catch (err) {
-      console.error("Failed to record progress", err);
+      console.error("Failed to submit answer:", err);
     }
 
-    // trigger AI explanation
+    // prompt AI for explanation
     const reply = isCorrect
-      ? "Great job! That's the correct answer. Would you like me to explain why?"
-      : `That's not quite right. The correct answer is ${question.answers.correct_option_ids?.[0]}. Would you like me to explain why?`;
+      ? "Nice! You've got it. Want me to explain why?"
+      : `Not quite—the correct option is ${
+          question.answers.correct_option_ids?.[0]
+        }. Need an explanation?`;
 
-    sendMessage(reply, { blocks: question.content, options: question.options });
+    sendMessage(reply, {
+      blocks: question.content,
+      options: question.options,
+    });
   };
 
   const handleNext = () => {
-    // if you have a list of IDs, you can navigate; for now, bounce to dashboard
+    if (nextQuestion) {
+      // load the recommended next
+      setQuestion(nextQuestion);
+    } else {
+      // no more questions
+      navigate("/app/dashboard");
+    }
+  };
+
+  const handlePrev = () => {
     navigate("/app/dashboard");
   };
-  const handlePrev = () => navigate("/app/dashboard");
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <span>Loading user…</span>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -135,7 +158,7 @@ const QuestionPage: React.FC = () => {
           <div className="hidden md:flex items-center space-x-2">
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                question.difficulty === "Hard"
+                question.difficulty > 4
                   ? "bg-red-100 text-red-800"
                   : "bg-yellow-100 text-yellow-800"
               }`}
@@ -143,7 +166,7 @@ const QuestionPage: React.FC = () => {
               {question.difficulty}
             </span>
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {question.tags[0] || "General"}
+              {question.tags[0] ?? "General"}
             </span>
           </div>
         </div>
@@ -152,13 +175,13 @@ const QuestionPage: React.FC = () => {
             className={`p-2 rounded-full ${
               isFlagged ? "text-red-500" : "text-gray-400 hover:text-gray-600"
             }`}
-            onClick={() => setIsFlagged((f) => !f)}
+            onClick={() => setIsFlagged(f => !f)}
           >
             <Flag size={18} />
           </button>
           <button
             className="p-2 rounded-full text-gray-400 hover:text-gray-600"
-            onClick={() => setShowAI((a) => !a)}
+            onClick={() => setShowAI(a => !a)}
           >
             {showAI ? <X size={18} /> : <Info size={18} />}
           </button>
@@ -183,21 +206,36 @@ const QuestionPage: React.FC = () => {
         />
 
         <div className="flex justify-between mt-6">
-          <Button variant="outline" leftIcon={<ChevronLeft size={16} />} onClick={handlePrev}>
+          <Button
+            variant="outline"
+            leftIcon={<ChevronLeft size={16} />}
+            onClick={handlePrev}
+          >
             Previous
           </Button>
 
           {isSubmitted ? (
             <div className="flex space-x-3">
-              <Button variant="outline" leftIcon={<Info size={16} />} onClick={() => setShowExplanation((e) => !e)}>
+              <Button
+                variant="outline"
+                leftIcon={<Info size={16} />}
+                onClick={() => setShowExplanation(e => !e)}
+              >
                 {showExplanation ? "Hide Explanation" : "Show Explanation"}
               </Button>
-              <Button rightIcon={<ChevronRight size={16} />} onClick={handleNext}>
+              <Button
+                rightIcon={<ChevronRight size={16} />}
+                onClick={handleNext}
+              >
                 Next
               </Button>
             </div>
           ) : (
-            <Button disabled={!selectedAnswer} onClick={handleSubmit} leftIcon={<ChevronRight size={16} />}>
+            <Button
+              disabled={!selectedAnswer}
+              onClick={handleSubmit}
+              leftIcon={<ChevronRight size={16} />}
+            >
               Submit Answer
             </Button>
           )}
@@ -206,8 +244,12 @@ const QuestionPage: React.FC = () => {
         {showExplanation && question.explanation && (
           <Card className="mt-6 border-green-200">
             <CardContent className="p-5">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Explanation</h3>
-              <p className="text-gray-700 whitespace-pre-line">{question.explanation}</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Explanation
+              </h3>
+              <p className="text-gray-700 whitespace-pre-line">
+                {question.explanation}
+              </p>
             </CardContent>
           </Card>
         )}

@@ -33,7 +33,7 @@ export interface Question {
     options: any;
     answers: { correct_option_ids?: string[] };
     tags: string[];
-    difficulty: number | string;
+    difficulty: number;
     explanation?: string;
   }
 
@@ -65,3 +65,7 @@ export type DashboardData = {
     average: number;
   };
 };
+
+export interface NextQuestionResponse {
+  next_question: Question | null;
+}

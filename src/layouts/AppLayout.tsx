@@ -1,6 +1,6 @@
 // src/layouts/AppLayout.tsx
-import React, { useState, useRef, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import React, { useState, useRef, useEffect } from "react";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -14,75 +14,89 @@ import {
   ChevronRight,
   User,
   GraduationCap as Graduate,
-} from 'lucide-react'
-import { useUser } from '../context/UserContext'
-import { AITutorProvider } from '../context/AITutorContext'
-import Button from '../components/ui/Button'
-import ChatSidebar from '../components/chat/ChatSidebar'
+} from "lucide-react";
+import { useUser } from "../context/UserContext";
+import { AITutorProvider } from "../context/AITutorContext";
+import Button from "../components/ui/Button";
+import ChatSidebar from "../components/chat/ChatSidebar";
 
 interface NavItemProps {
-  icon: React.ReactNode
-  label: string
-  path?: string
-  comingSoon?: boolean
+  icon: React.ReactNode;
+  label: string;
+  path?: string;
+  comingSoon?: boolean;
 }
 
 const navLinks: NavItemProps[] = [
-  { icon: <LayoutDashboard size={20} />, label: 'Dashboard', path: '/app/dashboard' },
-  { icon: <BookOpen size={20} />, label: 'Question Bank', path: '/app/questions' },
-  { icon: <School size={20} />, label: 'Practice Tests', comingSoon: true },
-  { icon: <BarChart2 size={20} />, label: 'Analytics', comingSoon: true },
-  { icon: <Calculator size={20} />, label: 'Study Plan', comingSoon: true },
-]
+  {
+    icon: <LayoutDashboard size={20} />,
+    label: "Dashboard",
+    path: "/app/dashboard",
+  },
+  {
+    icon: <BookOpen size={20} />,
+    label: "Question Bank",
+    path: "/app/questions",
+  },
+  { icon: <School size={20} />, label: "Practice Tests", comingSoon: true },
+  { icon: <BarChart2 size={20} />, label: "Analytics", comingSoon: true },
+  { icon: <Calculator size={20} />, label: "Study Plan", comingSoon: true },
+];
 
 const secondaryLinks: NavItemProps[] = [
-  { icon: <Settings size={20} />, label: 'Settings', path: '/app/settings' },
-  { icon: <HelpCircle size={20} />, label: 'Help & Resources', path: '/app/help' },
-]
+  { icon: <Settings size={20} />, label: "Settings", path: "/app/settings" },
+  {
+    icon: <HelpCircle size={20} />,
+    label: "Help & Resources",
+    path: "/app/help",
+  },
+];
 
 const AppLayout: React.FC = () => {
-  const { user, logout } = useUser()
-  const navigate = useNavigate()
+  const { user, logout } = useUser();
+  const navigate = useNavigate();
 
   // collapse states
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [chatOpen, setChatOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(true);
 
   // percentage widths
-  const [leftPct, setLeftPct] = useState(18)   // 20% default
-  const [rightPct, setRightPct] = useState(30) // 30% default
+  const [leftPct, setLeftPct] = useState(18);
+  const [rightPct, setRightPct] = useState(30);
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const draggingRef = useRef<'left' | 'right' | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef<"left" | "right" | null>(null);
 
   // drag-to-resize logic
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
-      if (!draggingRef.current || !containerRef.current) return
-      const rect = containerRef.current.getBoundingClientRect()
-      if (draggingRef.current === 'left') {
-        const pct = ((e.clientX - rect.left) / rect.width) * 100
-        const max = 100 - rightPct - 5
-        setLeftPct(Math.max(10, Math.min(pct, max)))
+      if (!draggingRef.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      if (draggingRef.current === "left") {
+        const pct = ((e.clientX - rect.left) / rect.width) * 100;
+        const max = 100 - rightPct - 5;
+        setLeftPct(Math.max(10, Math.min(pct, max)));
       } else {
-        const pct = ((rect.right - e.clientX) / rect.width) * 100
-        const max = 100 - leftPct - 5
-        setRightPct(Math.max(10, Math.min(pct, max)))
+        const pct = ((rect.right - e.clientX) / rect.width) * 100;
+        const max = 100 - leftPct - 5;
+        setRightPct(Math.max(10, Math.min(pct, max)));
       }
-    }
-    const onMouseUp = () => { draggingRef.current = null }
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseup', onMouseUp)
+    };
+    const onMouseUp = () => {
+      draggingRef.current = null;
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
     return () => {
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseup', onMouseUp)
-    }
-  }, [leftPct, rightPct])
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [leftPct, rightPct]);
 
   const handleLogout = () => {
-    logout()
-    navigate('/auth/login')
-  }
+    logout();
+    navigate("/auth/login");
+  };
 
   return (
     <AITutorProvider>
@@ -138,8 +152,8 @@ const AppLayout: React.FC = () => {
                     className={({ isActive }) =>
                       `flex items-center px-4 py-3 rounded-lg transition-colors ${
                         isActive
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'text-gray-700 hover:bg-gray-100'
+                          ? "bg-blue-100 text-blue-800"
+                          : "text-gray-700 hover:bg-gray-100"
                       }`
                     }
                   >
@@ -158,8 +172,8 @@ const AppLayout: React.FC = () => {
                   className={({ isActive }) =>
                     `flex items-center px-4 py-3 rounded-lg transition-colors ${
                       isActive
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'text-gray-700 hover:bg-gray-100'
+                        ? "bg-blue-100 text-blue-800"
+                        : "text-gray-700 hover:bg-gray-100"
                     }`
                   }
                 >
@@ -195,8 +209,8 @@ const AppLayout: React.FC = () => {
         {sidebarOpen && (
           <div
             className="cursor-col-resize hover:bg-gray-200"
-            style={{ width: '4px' }}
-            onMouseDown={() => (draggingRef.current = 'left')}
+            style={{ width: "4px" }}
+            onMouseDown={() => (draggingRef.current = "left")}
           />
         )}
 
@@ -209,8 +223,8 @@ const AppLayout: React.FC = () => {
         {chatOpen && (
           <div
             className="cursor-col-resize hover:bg-gray-200"
-            style={{ width: '4px' }}
-            onMouseDown={() => (draggingRef.current = 'right')}
+            style={{ width: "4px" }}
+            onMouseDown={() => (draggingRef.current = "right")}
           />
         )}
 
@@ -227,25 +241,31 @@ const AppLayout: React.FC = () => {
         {/* Chat Sidebar */}
         {chatOpen && (
           <aside
-            className="flex-shrink-0 flex flex-col bg-white border-l overflow-auto"
+            className="flex-shrink-0 flex flex-col bg-white border-l"
             style={{ width: `${rightPct}%` }}
           >
-            {/* Unified header with arrow */}
-            <div className="flex items-center justify-between bg-gray-50 p-4 border-b">
+            {/* Fixed header */}
+            <div className="flex-shrink-0 flex items-center justify-between bg-gray-50 p-4 border-b">
               <div>
                 <h2 className="text-lg font-semibold">AI Tutor Assistant</h2>
-                <p className="text-sm text-gray-500">Ask for hints or explanations</p>
+                <p className="text-sm text-gray-500">
+                  Ask for hints or explanations
+                </p>
               </div>
               <button onClick={() => setChatOpen(false)} className="p-1">
                 <ChevronRight size={20} />
               </button>
             </div>
-            <ChatSidebar />
+
+            {/* Scrollable chat body */}
+            <div className="flex-1 overflow-y-auto">
+              <ChatSidebar />
+            </div>
           </aside>
         )}
       </div>
     </AITutorProvider>
-  )
-}
+  );
+};
 
-export default AppLayout
+export default AppLayout;

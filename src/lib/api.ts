@@ -1,4 +1,4 @@
-import { DashboardData, Question } from "./types";
+import { DashboardData, NextQuestionResponse, Question } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -58,11 +58,6 @@ export async function sendChatMessage({
     }
     return res.json();  // Question[]
   }
-
-/** shape of the backend response */
-export interface NextQuestionResponse {
-  next_question: Question | null;
-}
 
 export async function submitAnswer(params: {
   user_id: string;
