@@ -80,18 +80,32 @@ export async function submitAnswer(params: {
 }
 
 export async function fetchQuestionSummaries(params: {
-  type?: string;
+  type?: string[];          // ← was `type?: string`
   tags?: string[];
-  difficulty?: number;
+  minDifficulty?: number;
+  maxDifficulty?: number;
   page?: number;
   pageSize?: number;
 }): Promise<Question[]> {
-  const { type, tags, difficulty, page = 1, pageSize = 20 } = params;
+  const {
+    type,
+    tags,
+    minDifficulty,
+    maxDifficulty,
+    page = 1,
+    pageSize = 20,
+  } = params;
+
   const skip = (page - 1) * pageSize;
   const qs = new URLSearchParams();
-  if (type) qs.set("type", type);
+
+  if (type) type.forEach((t) => qs.append("type", t));
   if (tags) tags.forEach((t) => qs.append("tags", t));
-  if (difficulty !== undefined) qs.set("difficulty", difficulty.toString());
+  if (minDifficulty !== undefined)
+    qs.set("minDifficulty", String(minDifficulty));
+  if (maxDifficulty !== undefined)
+    qs.set("maxDifficulty", String(maxDifficulty));
+
   qs.set("skip", skip.toString());
   qs.set("limit", pageSize.toString());
 
