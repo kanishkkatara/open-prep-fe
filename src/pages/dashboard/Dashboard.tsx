@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
   const [overall, setOverall] = useState<DashboardData['overallProgress']>({
     quantitative: 0,
     verbal: 0,
-    ir: 0,
+    di: 0,
     average: 0,
   });
 
@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
                 {[
                   { label: 'Quantitative', percentage: overall.quantitative },
                   { label: 'Verbal', percentage: overall.verbal },
-                  { label: 'Integrated Reasoning', percentage: overall.ir },
+                  { label: 'Data Insights', percentage: overall.di },
                 ].map(({ label, percentage }) => (
                   <div key={label}>
                     <div className="flex justify-between text-sm mb-1">

@@ -61,7 +61,7 @@ export type DashboardData = {
   overallProgress: {
     quantitative: number;
     verbal: number;
-    ir: number;
+    di: number;
     average: number;
   };
 };

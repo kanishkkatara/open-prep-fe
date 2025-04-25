@@ -42,20 +42,20 @@ export interface QuestionCategory {
         { value: 'data-interpretation', label: 'Data Interpretation' }
       ]
     },
-    {
-      type: 'sentence-correction',
-      label: 'Sentence Correction',
-      tags: [
-        { value: 'grammar', label: 'Grammar' },
-        { value: 'verb-tenses', label: 'Verb Tenses' },
-        { value: 'subject-verb-agreement', label: 'Subject-Verb Agreement' },
-        { value: 'pronouns', label: 'Pronouns' },
-        { value: 'parallelism', label: 'Parallelism' },
-        { value: 'modifiers', label: 'Modifiers' },
-        { value: 'idioms', label: 'Idioms' },
-        { value: 'punctuation', label: 'Punctuation' }
-      ]
-    },
+    // {
+    //   type: 'sentence-correction',
+    //   label: 'Sentence Correction',
+    //   tags: [
+    //     { value: 'grammar', label: 'Grammar' },
+    //     { value: 'verb-tenses', label: 'Verb Tenses' },
+    //     { value: 'subject-verb-agreement', label: 'Subject-Verb Agreement' },
+    //     { value: 'pronouns', label: 'Pronouns' },
+    //     { value: 'parallelism', label: 'Parallelism' },
+    //     { value: 'modifiers', label: 'Modifiers' },
+    //     { value: 'idioms', label: 'Idioms' },
+    //     { value: 'punctuation', label: 'Punctuation' }
+    //   ]
+    // },
     {
       type: 'critical-reasoning',
       label: 'Critical Reasoning',
