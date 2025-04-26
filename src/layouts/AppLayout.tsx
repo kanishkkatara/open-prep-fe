@@ -47,8 +47,8 @@ const secondaryLinks: NavItemProps[] = [
   { icon: <Settings size={20} />, label: "Settings", path: "/app/settings" },
   {
     icon: <HelpCircle size={20} />,
-    label: "Help & Resources",
-    path: "/app/help",
+    label: "Resources",
+    path: "/app/resources",
   },
 ];
 

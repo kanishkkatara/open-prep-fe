@@ -1,6 +1,13 @@
-import { DashboardData, NextQuestionResponse, Question } from "./types";
+import { BasicSettings, DashboardData, NextQuestionResponse, NotificationSettings, Question } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
 
 export async function loginWithGoogle(id_token: string) {
   const res = await fetch(`${BASE_URL}/api/users/login`, {
@@ -127,5 +134,46 @@ export async function getDashboard(): Promise<DashboardData> {
     },
   });
   if (!res.ok) throw new Error(`Failed to fetch dashboard: ${res.status}`);
+  return res.json();
+}
+
+// Settings endpoints
+export async function getBasicSettings(): Promise<BasicSettings> {
+  const res = await fetch(`${BASE_URL}/api/settings/basic`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Could not fetch basic settings");
+  return res.json();
+}
+
+export async function updateBasicSettings(settings: BasicSettings) {
+  const res = await fetch(`${BASE_URL}/api/settings/basic`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    credentials: "include",
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error("Could not update basic settings");
+  return res.json();
+}
+
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+  const res = await fetch(`${BASE_URL}/api/settings/notifications`, {
+    credentials: "include",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Could not fetch notification settings");
+  return res.json();
+}
+
+export async function updateNotificationSettings(settings: NotificationSettings) {
+  const res = await fetch(`${BASE_URL}/api/settings/notifications`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    credentials: "include",
+    body: JSON.stringify(settings),
+  });
+  if (!res.ok) throw new Error("Could not update notification settings");
   return res.json();
 }

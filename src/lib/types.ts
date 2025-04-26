@@ -69,3 +69,16 @@ export type DashboardData = {
 export interface NextQuestionResponse {
   next_question: Question | null;
 }
+
+export interface BasicSettings {
+  name: string;
+  email: string;
+  target_score: number;
+  exam_date: string | null;
+  previous_score: number | null;
+}
+
+export interface NotificationSettings {
+  notify_mail: boolean;
+  notify_whatsapp: boolean;
+}

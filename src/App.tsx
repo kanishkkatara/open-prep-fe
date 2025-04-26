@@ -15,6 +15,8 @@ import QuestionPage from "./pages/questions/QuestionPage";
 import { UserProvider } from "./context/UserContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LoadingScreen from "./components/ui/LoadingScreen";
+import SettingsPage from "./pages/settings/SettingsPage";
+import ResourcesPage from "./pages/resources/ResourcesPage";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -69,6 +71,17 @@ function App() {
             <Route path="questions" element={<QuestionBank />} />
             {/* Question Detail */}
             <Route path="questions/:id" element={<QuestionPage />} />
+            {/* Settings */}
+            <Route
+              path="settings"
+              element={
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+            {/* Resources */}
+            <Route path="resources" element={<ResourcesPage />} />
           </Route>
         </Routes>
       </UserProvider>
