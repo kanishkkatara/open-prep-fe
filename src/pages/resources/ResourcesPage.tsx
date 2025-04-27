@@ -1,6 +1,4 @@
 // src/pages/ResourcesPage.tsx
-import React from "react";
-
 type Resource = {
   title: string;
   url: string;

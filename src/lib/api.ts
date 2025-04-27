@@ -1,4 +1,4 @@
-import { BasicSettings, DashboardData, NextQuestionResponse, NotificationSettings, Question } from "./types";
+import { BasicSettings, DashboardData, NextQuestionResponse, NotificationSettings, Question, QuestionResponse, QuestionSummary } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 function getAuthHeaders() {
@@ -88,7 +88,7 @@ export async function fetchQuestionSummaries(params: {
   maxDifficulty?: number;
   page?: number;
   pageSize?: number;
-}): Promise<Question[]> {
+}): Promise<QuestionSummary[]> {
   const {
     type,
     tags,
@@ -116,14 +116,22 @@ export async function fetchQuestionSummaries(params: {
   return res.json();
 }
 
-export async function fetchQuestionById(id: string): Promise<Question> {
-  const res = await fetch(`${BASE_URL}/api/questions/${id}`);
+export async function fetchQuestionById(
+  id: string,
+  includeSub: boolean = true
+): Promise<QuestionResponse> {
+  const url = new URL(`${BASE_URL}/api/questions/${id}`);
+  if (includeSub) url.searchParams.set('include_sub', 'true');
+
+  const res = await fetch(url.toString(), {
+    headers: { 'Content-Type': 'application/json' },
+  });
   if (!res.ok) {
     const txt = await res.text();
     console.error(`Failed to fetch question ${id}:`, txt);
     throw new Error(`Failed to fetch question ${id}`);
   }
-  return res.json();
+  return res.json() as Promise<QuestionResponse>;
 }
 
 export async function getDashboard(): Promise<DashboardData> {

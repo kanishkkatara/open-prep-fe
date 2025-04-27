@@ -1,5 +1,5 @@
 // src/pages/SettingsPage.tsx
-import React, { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import {
   getBasicSettings,
   updateBasicSettings,

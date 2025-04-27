@@ -5,10 +5,10 @@ import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import * as Slider from "@radix-ui/react-slider";
 import { fetchQuestionSummaries } from "../../lib/api";
-import { Question } from "../../lib/types";
+import type { QuestionSummary } from "../../lib/types";  // update to summary type
 import Button from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
-import { questionCategories, QuestionCategory } from "../../lib/questionCategories";
+import { questionCategories } from "../../lib/questionCategories";
 
 // Shape for react-select options
 interface Option {
@@ -30,7 +30,7 @@ const QuestionBank: React.FC = () => {
   const navigate = useNavigate();
 
   // Data & loading
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<QuestionSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Filters
@@ -40,7 +40,7 @@ const QuestionBank: React.FC = () => {
 
   // Debounced filter values
   const debouncedTypes = useDebounce<Option[]>(selectedTypes, 500);
-  const debouncedTags = useDebounce<Option[]>(selectedTags, 500);
+  const debouncedTags  = useDebounce<Option[]>(selectedTags, 500);
   const debouncedDifficulty = useDebounce<number[]>(difficultyRange, 500);
 
   // Pagination
@@ -48,7 +48,10 @@ const QuestionBank: React.FC = () => {
   const pageSize = 20;
 
   // Build type options from categories
-  const typeOptions: Option[] = questionCategories.map(({ type, label }) => ({ value: type, label }));
+  const typeOptions: Option[] = questionCategories.map(({ type, label }) => ({
+    value: type,
+    label,
+  }));
 
   // Build tag options based on selected types
   const tagOptions: Option[] = useMemo(() => {
@@ -58,13 +61,16 @@ const QuestionBank: React.FC = () => {
       .filter(cat => selectedTypeValues.includes(cat.type))
       .forEach(cat => {
         cat.tags.forEach(tag => {
-          tagsAccumulator[tag.value] = { value: tag.value, label: tag.label };
+          tagsAccumulator[tag.value] = {
+            value: tag.value,
+            label: tag.label,
+          };
         });
       });
     return Object.values(tagsAccumulator);
   }, [debouncedTypes]);
 
-  // Fetch when debounced filters or page change
+  // Fetch when filters or page change
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -77,7 +83,9 @@ const QuestionBank: React.FC = () => {
           page,
           pageSize,
         });
-        setQuestions(data);
+        // Filter out any sub-questions (those with parentId)
+        const topLevel = data.filter(q => !q.parentId);
+        setQuestions(topLevel);
       } catch (err) {
         console.error("Error loading summaries:", err);
       } finally {
@@ -98,73 +106,73 @@ const QuestionBank: React.FC = () => {
       {/* Filter Panel */}
       <Card className="mb-6 bg-white shadow-md rounded-lg">
         <CardContent>
-  {/* Row 1: Type & Tags */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    {/* Type Selector */}
-    <div>
-      <label className="block text-sm font-medium mb-1">Type</label>
-      <Select
-        options={typeOptions}
-        isMulti
-        value={selectedTypes}
-        onChange={v => setSelectedTypes(v as Option[])}
-        placeholder="Select types..."
-        classNamePrefix="react-select"
-        menuPortalTarget={document.body}
-        menuPosition="fixed"
-        styles={{ menuPortal: base => ({ ...base, zIndex: 1000 }) }}
-      />
-    </div>
+          {/* Row 1: Type & Tags */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Type Selector */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Type</label>
+              <Select
+                options={typeOptions}
+                isMulti
+                value={selectedTypes}
+                onChange={v => setSelectedTypes(v as Option[])}
+                placeholder="Select types..."
+                classNamePrefix="react-select"
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+                styles={{ menuPortal: base => ({ ...base, zIndex: 1000 }) }}
+              />
+            </div>
 
-    {/* Tags Selector */}
-    <div>
-      <label className="block text-sm font-medium mb-1">Tags</label>
-      <Select
-        options={tagOptions}
-        isMulti
-        value={selectedTags}
-        onChange={v => setSelectedTags(v as Option[])}
-        placeholder="Select tags..."
-        classNamePrefix="react-select"
-        isDisabled={!debouncedTypes.length}
-        menuPortalTarget={document.body}
-        menuPosition="fixed"
-        styles={{ menuPortal: base => ({ ...base, zIndex: 1000 }) }}
-      />
-    </div>
-  </div>
+            {/* Tags Selector */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Tags</label>
+              <Select
+                options={tagOptions}
+                isMulti
+                value={selectedTags}
+                onChange={v => setSelectedTags(v as Option[])}
+                placeholder="Select tags..."
+                classNamePrefix="react-select"
+                isDisabled={!debouncedTypes.length}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+                styles={{ menuPortal: base => ({ ...base, zIndex: 1000 }) }}
+              />
+            </div>
+          </div>
 
-  {/* Row 2: Difficulty full width */}
-  <div className="mt-6">
-    <label className="block text-sm font-medium mb-1">
-      Difficulty: {difficultyRange[0]} – {difficultyRange[1]}
-    </label>
-    <Slider.Root
-      className="relative flex items-center select-none w-full h-6"
-      value={difficultyRange}
-      onValueChange={setDifficultyRange}
-      min={1}
-      max={7}
-      step={1}
-      aria-label="Difficulty range"
-    >
-      <Slider.Track className="bg-gray-200 relative flex-1 h-1 rounded-full">
-        <Slider.Range className="absolute bg-blue-500 h-full rounded-full" />
-      </Slider.Track>
-      {difficultyRange.map((_, idx) => (
-        <Slider.Thumb
-          key={idx}
-          className="block w-4 h-4 bg-white border-2 border-blue-500 rounded-full shadow focus:outline-none"
-        />
-      ))}
-    </Slider.Root>
-    <div className="flex justify-between text-xs text-gray-500 mt-1">
-      {[1,2,3,4,5,6,7].map(lvl => (
-        <span key={lvl}>{lvl}</span>
-      ))}
-    </div>
-  </div>
-</CardContent>
+          {/* Row 2: Difficulty full width */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium mb-1">
+              Difficulty: {difficultyRange[0]} – {difficultyRange[1]}
+            </label>
+            <Slider.Root
+              className="relative flex items-center select-none w-full h-6"
+              value={difficultyRange}
+              onValueChange={setDifficultyRange}
+              min={1}
+              max={7}
+              step={1}
+              aria-label="Difficulty range"
+            >
+              <Slider.Track className="bg-gray-200 relative flex-1 h-1 rounded-full">
+                <Slider.Range className="absolute bg-blue-500 h-full rounded-full" />
+              </Slider.Track>
+              {difficultyRange.map((_, idx) => (
+                <Slider.Thumb
+                  key={idx}
+                  className="block w-4 h-4 bg-white border-2 border-blue-500 rounded-full shadow focus:outline-none"
+                />
+              ))}
+            </Slider.Root>
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              {[1,2,3,4,5,6,7].map(lvl => (
+                <span key={lvl}>{lvl}</span>
+              ))}
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       {/* Question List */}

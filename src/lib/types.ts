@@ -1,13 +1,5 @@
 // src/lib/types.ts
 
-export type BlockType =
-  | "paragraph"
-  | "image"
-  | "table"
-  | "list"
-  | "dropdown"
-  | "numeric";
-
 export interface ContentBlock {
   type: BlockType;
   text?: string;
@@ -35,6 +27,15 @@ export interface Question {
     tags: string[];
     difficulty: number;
     explanation?: string;
+  }
+
+  export interface QuestionSummary {
+    id:            string;
+    type:          string;
+    difficulty:    number;
+    tags:          string[];
+    parentId?:     string;   // matches alias
+    order?:        number;
   }
 
 // Raw API item shape
@@ -67,7 +68,7 @@ export type DashboardData = {
 };
 
 export interface NextQuestionResponse {
-  next_question: Question | null;
+  next_question: QuestionResponse | null;
 }
 
 export interface BasicSettings {
@@ -82,3 +83,66 @@ export interface NotificationSettings {
   notify_mail: boolean;
   notify_whatsapp: boolean;
 }
+
+
+
+export type BlockType =
+  | 'paragraph'
+  | 'image'
+  | 'table'
+  | 'list'
+  | 'dropdown'
+  | 'numeric'
+  | 'matrix'
+  | 'ds_grid';
+
+export interface ContentBlock {
+  type: BlockType;
+  text?: string;
+  url?: string;
+  alt?: string;
+  headers?: string[];
+  rows?: string[][];
+  /**
+   * Optional layout or interaction metadata.
+   * Includes items for list blocks and any other custom fields.
+   */
+  data?: {
+    items?: string[];
+    [key: string]: any;
+  };
+}
+
+export interface Option {
+  id: string;
+  blocks: ContentBlock[];
+}
+
+export interface BaseQuestion {
+  id: string;
+  type: string;
+  content: ContentBlock[];
+  options: Option[];
+  answers: Record<string, any>;
+  tags: string[];
+  difficulty: number;
+}
+
+export interface SingleQuestion extends BaseQuestion {
+  kind: 'single';
+}
+
+export interface CompositeQuestion extends BaseQuestion {
+  kind: 'composite';
+  groupId: string;
+  passage: ContentBlock[];
+  subquestions: SingleQuestion[];
+  totalSubquestions: number;
+  nextGroupId: string | null;
+}
+
+export type QuestionResponse = SingleQuestion | CompositeQuestion;
+
+// export interface NextQuestionResponse {
+//   next_question: QuestionResponse | null;
+// }
