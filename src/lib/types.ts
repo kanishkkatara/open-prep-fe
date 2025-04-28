@@ -84,8 +84,6 @@ export interface NotificationSettings {
   notify_whatsapp: boolean;
 }
 
-
-
 export type BlockType =
   | 'paragraph'
   | 'image'
@@ -103,14 +101,15 @@ export interface ContentBlock {
   alt?: string;
   headers?: string[];
   rows?: string[][];
-  /**
-   * Optional layout or interaction metadata.
-   * Includes items for list blocks and any other custom fields.
-   */
   data?: {
     items?: string[];
     [key: string]: any;
   };
+  /**
+   * For ds_grid blocks, these fields appear:
+   */
+  row_headers?: string[];
+  col_headers?: string[];
 }
 
 export interface Option {
@@ -118,12 +117,24 @@ export interface Option {
   blocks: ContentBlock[];
 }
 
+export interface CellCoordinate {
+  row_index: number;
+  column_index: number;
+}
+
+export interface AnswerSchema {
+  correct_option_id?: string;
+  selected_choice_index?: number;
+  selected_pairs?: CellCoordinate[];
+  clicked_hotspot_id?: string;
+}
+
 export interface BaseQuestion {
   id: string;
   type: string;
   content: ContentBlock[];
   options: Option[];
-  answers: Record<string, any>;
+  answers: AnswerSchema;
   tags: string[];
   difficulty: number;
 }
@@ -143,6 +154,7 @@ export interface CompositeQuestion extends BaseQuestion {
 
 export type QuestionResponse = SingleQuestion | CompositeQuestion;
 
-// export interface NextQuestionResponse {
-//   next_question: QuestionResponse | null;
-// }
+export interface NextQuestionResponse {
+  next_question: QuestionResponse | null;
+}
+

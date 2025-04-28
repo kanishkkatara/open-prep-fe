@@ -1,13 +1,13 @@
-// src/components/question/QuestionDisplay.tsx
-
 import React from 'react';
 import { Card, CardContent } from '../../components/ui/Card';
-import type { ContentBlock, SingleQuestion } from '../../lib/types';
+import type { ContentBlock, CellCoordinate, SingleQuestion } from '../../lib/types';
 
 interface QuestionDisplayProps {
   question: SingleQuestion;
   selectedAnswer: string | null;
+  selectedGrid: CellCoordinate[];
   onSelectAnswer: (id: string) => void;
+  onSelectGrid: (row: number, col: number) => void;
   isSubmitted: boolean;
 }
 
@@ -22,158 +22,188 @@ const sectionLabels: Record<string, string> = {
   'two-part-analysis': 'Two-Part Analysis',
 };
 
-const renderBlock = (block: ContentBlock, idx: number) => {
-  switch (block.type) {
-    case 'paragraph':
-      return (
-        <p key={idx} className="text-gray-800 text-lg mb-4 whitespace-pre-line">
-          {block.text}
-        </p>
-      );
-    case 'image':
-      return (
-        <img
-          key={idx}
-          src={block.url}
-          alt={block.alt || ''}
-          className="mb-4 max-w-full rounded"
-        />
-      );
-    case 'table':
-      return (
-        <table key={idx} className="mb-4 w-full border-collapse">
-          <thead>
-            <tr>
-              {block.headers?.map((h, j) => (
-                <th key={j} className="border px-2 py-1 text-left">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {block.rows?.map((row, r) => (
-              <tr key={r}>
-                {row.map((cell, c) => (
-                  <td key={c} className="border px-2 py-1">
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      );
-    case 'list':
-      return (
-        <ul key={idx} className="mb-4 list-disc list-inside">
-          {block.data?.items?.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-      );
-    case 'dropdown':
-      return (
-        <select key={idx} className="mb-4 block rounded border px-2 py-1">
-          {block.data?.options?.map((opt: string, i: number) => (
-            <option key={i}>{opt}</option>
-          ))}
-        </select>
-      );
-    case 'numeric':
-      return (
-        <input
-          key={idx}
-          type="number"
-          className="mb-4 block w-32 rounded border px-2 py-1"
-          placeholder="Enter number"
-        />
-      );
-    case 'matrix':
-      return (
-        <div key={idx} className="mb-4 p-4 bg-gray-50 rounded">
-          {/* Render matrix UI based on block.data */}
-          [Matrix question]
-        </div>
-      );
-    case 'ds_grid':
-      return (
-        <div key={idx} className="mb-4 p-4 bg-gray-50 rounded">
-          {/* Render DS grid UI based on block.data */}
-          [Data Sufficiency grid]
-        </div>
-      );
-    default:
-      return null;
-  }
-};
-
-const getOptionClass = (
-  optionId: string,
-  selectedAnswer: string | null,
-  correctAnswer: string | null,
-  isSubmitted: boolean
-) => {
-  if (!isSubmitted) {
-    return selectedAnswer === optionId
-      ? 'bg-blue-50 border-blue-500'
-      : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50';
-  }
-  if (correctAnswer === optionId) {
-    return 'bg-green-50 border-green-500';
-  }
-  if (selectedAnswer === optionId && selectedAnswer !== correctAnswer) {
-    return 'bg-red-50 border-red-500';
-  }
-  return 'border-gray-300 opacity-70';
-};
-
 const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
   question,
   selectedAnswer,
+  selectedGrid,
   onSelectAnswer,
+  onSelectGrid,
   isSubmitted,
 }) => {
   const { type, content, options, answers } = question;
   const correctAnswer = answers.correct_option_id || null;
+  const correctPairs = answers.selected_pairs || [];
   const sectionLabel = sectionLabels[type] || 'Question';
+
+  function renderBlock(block: ContentBlock, idx: number) {
+    switch (block.type) {
+      case 'paragraph':
+        return (
+          <p key={idx} className="text-gray-800 text-lg mb-4 whitespace-pre-line">
+            {block.text}
+          </p>
+        );
+      case 'image':
+        return (
+          <img
+            key={idx}
+            src={block.url}
+            alt={block.alt || ''}
+            className="mb-4 max-w-full rounded"
+          />
+        );
+      case 'table':
+        return (
+          <table key={idx} className="mb-4 w-full border-collapse">
+            <thead>
+              <tr>
+                {block.headers?.map((h, j) => (
+                  <th key={j} className="border px-2 py-1 text-left">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows?.map((row, r) => (
+                <tr key={r}>
+                  {row.map((cell, c) => (
+                    <td key={c} className="border px-2 py-1">
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+      // you can expand list / dropdown / numeric / matrix as before...
+      case 'matrix':
+        return (
+          <div key={idx} className="mb-4 p-4 bg-gray-50 rounded overflow-auto">
+            {/* render matrix */}
+          </div>
+        );
+
+      case 'ds_grid': {
+        const ds = block as any;
+        return (
+          <div key={idx} className="mb-4 overflow-auto">
+            <table className="min-w-full table-fixed border-collapse">
+              <thead>
+                <tr>
+                  <th className="border px-2 py-1"></th>
+                  {ds.col_headers.map((col: string, ci: number) => (
+                    <th
+                      key={ci}
+                      className="border px-2 py-1 text-center font-medium"
+                    >
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ds.row_headers.map((row: string, ri: number) => (
+                  <tr key={ri} className="hover:bg-gray-50">
+                    <th className="border px-2 py-1 text-left font-medium">
+                      {row}
+                    </th>
+                    {ds.col_headers.map((_: any, ci: number) => {
+                      const isSel = selectedGrid.some(
+                        p => p.row_index === ri && p.column_index === ci
+                      );
+                      const isCorr = correctPairs.some(
+                        p => p.row_index === ri && p.column_index === ci
+                      );
+                      let bg = '';
+                      if (isSubmitted) {
+                        if (isCorr) bg = 'bg-green-100 border-green-500';
+                        else if (isSel) bg = 'bg-red-100 border-red-500';
+                      }
+                      return (
+                        <td
+                          key={ci}
+                          className={`border px-2 py-6 text-center cursor-pointer ${bg}`}
+                          onClick={() => !isSubmitted && onSelectGrid(ri, ci)}
+                        >
+                          <input
+                            type="radio"
+                            name={`grid-col-${ci}`}
+                            checked={isSel}
+                            disabled={isSubmitted}
+                            onChange={() => onSelectGrid(ri, ci)}
+                            className="mx-auto"
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+
+      default:
+        return null;
+    }
+  }
 
   return (
     <Card>
       <CardContent className="pt-6">
+        {/* Section label + content */}
         <div className="mb-6">
           <div className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full mb-2">
             {sectionLabel}
           </div>
-
-          {content.map((blk, i) => renderBlock(blk, i))}
+          {content.map(renderBlock)}
         </div>
 
-        <div className="space-y-3 mt-6">
-          {options.map((opt) => (
-            <div
-              key={opt.id}
-              className={`border rounded-lg p-4 transition-all cursor-pointer ${getOptionClass(
-                opt.id,
-                selectedAnswer,
-                correctAnswer,
-                isSubmitted
-              )}`}
-              onClick={() => !isSubmitted && onSelectAnswer(opt.id)}
-            >
-              <div className="flex items-start">
-                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center mr-3 flex-shrink-0 border border-current">
-                  <span className="text-sm font-medium">{opt.id}</span>
-                </div>
-                <div className="flex-1">
-                  {opt.blocks.map((blk, i) => (
-                    <React.Fragment key={i}>{renderBlock(blk, i)}</React.Fragment>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Options or grid */}
+        {type === 'two-part-analysis' ? (
+          // grid handled above via renderBlock('ds_grid')
+          null
+        ) : (
+          <div className="space-y-3 mt-6">
+            {options.map(opt => {
+              const isSel = selectedAnswer === opt.id;
+              const isCorr = correctAnswer === opt.id;
+              let borderClass = isSel
+                ? 'border-blue-500'
+                : 'border-gray-300 hover:border-blue-300';
+              let bgClass = '';
+              if (!isSubmitted && isSel) bgClass = 'bg-blue-50';
+              if (isSubmitted) {
+                if (isCorr) bgClass = 'bg-green-50';
+                else if (isSel) bgClass = 'bg-red-50';
+              }
+              return (
+                <label
+                  key={opt.id}
+                  className={`flex items-start border rounded-lg p-4 cursor-pointer transition-all ${borderClass} ${bgClass}`}
+                >
+                  <input
+                    type="radio"
+                    name="mcq"
+                    value={opt.id}
+                    checked={isSel}
+                    disabled={isSubmitted}
+                    onChange={() => onSelectAnswer(opt.id)}
+                    className="mr-3 mt-1"
+                  />
+                  <div className="flex-1">
+                    {opt.blocks.map((b, i) => (
+                      <React.Fragment key={i}>{renderBlock(b, i)}</React.Fragment>
+                    ))}
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
