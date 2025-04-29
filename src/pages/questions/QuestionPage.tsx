@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft,
   ChevronRight,
   Flag,
   Clock,
@@ -23,7 +22,6 @@ import type {
   SingleQuestion,
   CellCoordinate,
 } from '../../lib/types';
-import { Card, CardContent } from '../../components/ui/Card';
 
 const QuestionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +44,6 @@ const QuestionPage: React.FC = () => {
 
   // UI toggles
   const [flagged, setFlagged] = useState(false);
-  const [showAI, setShowAI] = useState(true);
   const [explain, setExplain] = useState(false);
 
   // Load question
@@ -168,9 +165,7 @@ const QuestionPage: React.FC = () => {
         </div>
         <div className="flex items-center space-x-2">
           <button onClick={() => setFlagged(f => !f)}><Flag size={18} className={flagged ? 'text-red-500' : 'text-gray-400'} /></button>
-          <button onClick={() => setShowAI(a => !a)}>
-            {showAI ? <X size={18} /> : <Info size={18} />}
-          </button>
+          <X size={18} onClick={() => navigate('/app/questions')}/>
         </div>
       </div>
 
@@ -193,7 +188,6 @@ const QuestionPage: React.FC = () => {
         />
 
         <div className="flex justify-between mt-6">
-          <Button variant="outline" onClick={() => navigate('/app/dashboard')} leftIcon={<ChevronLeft size={16} />}>Previous</Button>
           {!submitted ? (
             <Button
               onClick={onSubmit}
@@ -207,15 +201,6 @@ const QuestionPage: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* {explain && displayed.explanation && (
-          <Card className="mt-6 border-green-200">
-            <CardContent>
-              <h3 className="font-semibold">Explanation</h3>
-              <p className="whitespace-pre-line">{displayed.explanation}</p>
-            </CardContent>
-          </Card>
-        )} */}
       </div>
     </div>
   );

@@ -105,7 +105,7 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType })
   const badge = sectionLabels[questionType] || questionType.replace(/-/g, " ");
 
   return (
-    <Card className="mb-6">
+    <Card>
       <CardContent>
         {/* Section badge */}
         <div className="mb-4">
