@@ -137,7 +137,7 @@ const AppLayout: React.FC = () => {
                     {icon}
                     <span className="ml-3 flex-1">{label}</span>
                     <div
-                      className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 
+                      className="absolute top mb-2 right-0
                                  whitespace-nowrap rounded bg-gray-200 px-2 py-0.5 text-xs 
                                  text-gray-600 opacity-0 group-hover:opacity-100 
                                  transition-opacity"

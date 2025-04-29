@@ -36,6 +36,7 @@ export interface Question {
     tags:          string[];
     parentId?:     string;   // matches alias
     order?:        number;
+    preview_text: string;
   }
 
 // Raw API item shape

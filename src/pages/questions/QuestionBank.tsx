@@ -5,18 +5,17 @@ import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import * as Slider from "@radix-ui/react-slider";
 import { fetchQuestionSummaries } from "../../lib/api";
-import type { QuestionSummary } from "../../lib/types";  // update to summary type
+import type { QuestionSummary } from "../../lib/types";
 import Button from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { questionCategories } from "../../lib/questionCategories";
 
-// Shape for react-select options
 interface Option {
   value: string;
   label: string;
 }
 
-// Debounce hook
+// debounce hook
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState<T>(value);
   useEffect(() => {
@@ -29,48 +28,43 @@ function useDebounce<T>(value: T, delay: number): T {
 const QuestionBank: React.FC = () => {
   const navigate = useNavigate();
 
-  // Data & loading
+  // state
   const [questions, setQuestions] = useState<QuestionSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Filters
+  // filters
   const [selectedTypes, setSelectedTypes] = useState<Option[]>([]);
   const [selectedTags, setSelectedTags] = useState<Option[]>([]);
   const [difficultyRange, setDifficultyRange] = useState<number[]>([1, 7]);
 
-  // Debounced filter values
-  const debouncedTypes = useDebounce<Option[]>(selectedTypes, 500);
-  const debouncedTags  = useDebounce<Option[]>(selectedTags, 500);
-  const debouncedDifficulty = useDebounce<number[]>(difficultyRange, 500);
+  // debounced filters
+  const debouncedTypes = useDebounce(selectedTypes, 500);
+  const debouncedTags = useDebounce(selectedTags, 500);
+  const debouncedDifficulty = useDebounce(difficultyRange, 500);
 
-  // Pagination
+  // pagination
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
-  // Build type options from categories
+  // type & tag options
   const typeOptions: Option[] = questionCategories.map(({ type, label }) => ({
     value: type,
     label,
   }));
-
-  // Build tag options based on selected types
   const tagOptions: Option[] = useMemo(() => {
-    const selectedTypeValues = debouncedTypes.map(t => t.value);
-    const tagsAccumulator: Record<string, Option> = {};
+    const types = debouncedTypes.map(t => t.value);
+    const acc: Record<string, Option> = {};
     questionCategories
-      .filter(cat => selectedTypeValues.includes(cat.type))
+      .filter(cat => types.includes(cat.type))
       .forEach(cat => {
         cat.tags.forEach(tag => {
-          tagsAccumulator[tag.value] = {
-            value: tag.value,
-            label: tag.label,
-          };
+          acc[tag.value] = { value: tag.value, label: tag.label };
         });
       });
-    return Object.values(tagsAccumulator);
+    return Object.values(acc);
   }, [debouncedTypes]);
 
-  // Fetch when filters or page change
+  // fetch summaries
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -83,18 +77,16 @@ const QuestionBank: React.FC = () => {
           page,
           pageSize,
         });
-        // Filter out any sub-questions (those with parentId)
-        const topLevel = data.filter(q => !q.parentId);
-        setQuestions(topLevel);
-      } catch (err) {
-        console.error("Error loading summaries:", err);
+        setQuestions(data.filter(q => !q.parentId));
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoading(false);
       }
     })();
   }, [debouncedTypes, debouncedTags, debouncedDifficulty, page]);
 
-  // Reset pagination on filter change
+  // reset page on filter change
   useEffect(() => {
     setPage(1);
   }, [debouncedTypes, debouncedTags, debouncedDifficulty]);
@@ -103,12 +95,11 @@ const QuestionBank: React.FC = () => {
     <div className="p-6">
       <h1 className="text-2xl font-semibold mb-4">Question Bank</h1>
 
-      {/* Filter Panel */}
-      <Card className="mb-6 bg-white shadow-md rounded-lg">
+      {/* Filters */}
+      <Card className="mb-6 bg-white shadow rounded-lg">
         <CardContent>
-          {/* Row 1: Type & Tags */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Type Selector */}
+            {/* Type */}
             <div>
               <label className="block text-sm font-medium mb-1">Type</label>
               <Select
@@ -124,7 +115,7 @@ const QuestionBank: React.FC = () => {
               />
             </div>
 
-            {/* Tags Selector */}
+            {/* Tags */}
             <div>
               <label className="block text-sm font-medium mb-1">Tags</label>
               <Select
@@ -142,13 +133,12 @@ const QuestionBank: React.FC = () => {
             </div>
           </div>
 
-          {/* Row 2: Difficulty full width */}
           <div className="mt-6">
             <label className="block text-sm font-medium mb-1">
               Difficulty: {difficultyRange[0]} – {difficultyRange[1]}
             </label>
             <Slider.Root
-              className="relative flex items-center select-none w-full h-6"
+              className="relative flex items-center h-6 select-none w-full"
               value={difficultyRange}
               onValueChange={setDifficultyRange}
               min={1}
@@ -159,17 +149,15 @@ const QuestionBank: React.FC = () => {
               <Slider.Track className="bg-gray-200 relative flex-1 h-1 rounded-full">
                 <Slider.Range className="absolute bg-blue-500 h-full rounded-full" />
               </Slider.Track>
-              {difficultyRange.map((_, idx) => (
+              {[0, 1].map(i => (
                 <Slider.Thumb
-                  key={idx}
+                  key={i}
                   className="block w-4 h-4 bg-white border-2 border-blue-500 rounded-full shadow focus:outline-none"
                 />
               ))}
             </Slider.Root>
             <div className="flex justify-between text-xs text-gray-500 mt-1">
-              {[1,2,3,4,5,6,7].map(lvl => (
-                <span key={lvl}>{lvl}</span>
-              ))}
+              {[1,2,3,4,5,6,7].map(n => <span key={n}>{n}</span>)}
             </div>
           </div>
         </CardContent>
@@ -186,9 +174,30 @@ const QuestionBank: React.FC = () => {
               className="py-4 px-2 hover:bg-gray-50 cursor-pointer"
               onClick={() => navigate(`/app/questions/${q.id}`)}
             >
-              <div className="font-medium capitalize">{q.type.replace('-', ' ')}</div>
-              <div className="text-sm text-gray-600">
-                Difficulty: {q.difficulty} | Tags: {q.tags.join(', ')}
+              <div className="flex items-baseline space-x-3">
+                {/* 1-line badge */}
+                <span className="
+                  inline-flex
+                  items-center
+                  bg-blue-100
+                  text-blue-800
+                  text-xs
+                  font-medium
+                  px-2
+                  py-0.5
+                  rounded-full
+                  capitalize
+                  whitespace-nowrap
+                ">
+                  {q.type.replace("-", " ")}
+                </span>
+                {/* Preview text */}
+                <span className="text-lg font-medium truncate">
+                  {q.preview_text?.trim()}
+                </span>
+              </div>
+              <div className="text-sm text-gray-600 mt-1">
+                Difficulty: {q.difficulty} | Tags: {q.tags.join(", ")}
               </div>
             </li>
           ))}
@@ -197,10 +206,7 @@ const QuestionBank: React.FC = () => {
 
       {/* Pagination */}
       <div className="flex justify-between mt-6">
-        <Button
-          disabled={page === 1}
-          onClick={() => setPage(p => Math.max(1, p - 1))}
-        >
+        <Button disabled={page === 1} onClick={() => setPage(p => p - 1)}>
           Previous
         </Button>
         <span className="self-center">Page {page}</span>
