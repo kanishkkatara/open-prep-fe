@@ -1,25 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Book, Calendar, Clock, Play, Target } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import ModuleCard from '../../components/dashboard/ModuleCard';
-import ProgressCircle from '../../components/ui/ProgressCircle';
-import { useUser } from '../../context/UserContext';
-import { DashboardData, RawStudyPlanItem } from '../../lib/types';
-import { getDashboard } from '../../lib/api';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Book, Calendar, Clock, Play, Target } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import ModuleCard from "../../components/dashboard/ModuleCard";
+import ProgressCircle from "../../components/ui/ProgressCircle";
+import { useUser } from "../../context/UserContext";
+import { DashboardData, RawStudyPlanItem } from "../../lib/types";
+import { getDashboard } from "../../lib/api";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
 
-  const [stats, setStats] = useState<DashboardData['stats']>({
+  const [stats, setStats] = useState<DashboardData["stats"]>({
     targetScore: 0,
     timeStudied: 0,
     questionsCompleted: 0,
   });
   const [rawPlan, setRawPlan] = useState<RawStudyPlanItem[]>([]);
-  const [overall, setOverall] = useState<DashboardData['overallProgress']>({
+  const [overall, setOverall] = useState<DashboardData["overallProgress"]>({
     quantitative: 0,
     verbal: 0,
     di: 0,
@@ -28,7 +33,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     getDashboard()
-      .then(data => {
+      .then((data) => {
         setStats(data.stats);
         setRawPlan(data.studyPlan);
         setOverall(data.overallProgress);
@@ -40,19 +45,24 @@ const Dashboard: React.FC = () => {
 
   // Map rawPlan → ModuleCard props
   type MCP = React.ComponentProps<typeof ModuleCard>;
-  const modules: MCP[] = rawPlan.map(item => ({
+  const modules: MCP[] = rawPlan.map((item) => ({
     id: item.id,
     title: item.title,
     description:
-      typeof item.description === 'string'
+      typeof item.description === "string"
         ? item.description
-        : JSON.stringify(item.description).slice(0, 100) + '…',
+        : JSON.stringify(item.description).slice(0, 100) + "…",
     completed: item.completed ? 1 : 0,
     total: item.total,
-    difficulty: item.difficulty === 1 ? 'Easy' : item.difficulty === 2 ? 'Medium' : 'Hard',
+    difficulty:
+      item.difficulty === 1
+        ? "Easy"
+        : item.difficulty === 2
+        ? "Medium"
+        : "Hard",
     estimatedTime: `${item.estimatedTime}m`,
     topics: item.topics,
-    icon: 'BookOpen',
+    icon: "BookOpen",
     onClick: handleModuleClick,
   }));
 
@@ -63,12 +73,13 @@ const Dashboard: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
           <p className="mt-1 text-gray-600">
-            Welcome back, <span className="font-medium">{user?.name}</span>! Here’s your study progress.
+            Welcome back, <span className="font-medium">{user?.name}</span>!
+            Here’s your study progress.
           </p>
         </div>
         <Button
           leftIcon={<Play size={18} />}
-          onClick={() => navigate('/app/questions')}
+          onClick={() => navigate("/app/questions")}
           className="whitespace-nowrap"
         >
           Resume Learning
@@ -77,14 +88,34 @@ const Dashboard: React.FC = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {[ 
-          { icon: <Target />, label: 'Target Score', value: `${stats.targetScore}+`, bg: 'bg-blue-50', fg: 'text-blue-600' },
-          { icon: <Clock />, label: 'Time Studied', value: `${stats.timeStudied} hrs`, bg: 'bg-green-50', fg: 'text-green-600' },
-          { icon: <Book />, label: 'Questions Completed', value: stats.questionsCompleted, bg: 'bg-purple-50', fg: 'text-purple-600' },
+        {[
+          {
+            icon: <Target />,
+            label: "Target Score",
+            value: `${stats.targetScore}+`,
+            bg: "bg-blue-50",
+            fg: "text-blue-600",
+          },
+          {
+            icon: <Clock />,
+            label: "Time Studied",
+            value: `${stats.timeStudied} hrs`,
+            bg: "bg-green-50",
+            fg: "text-green-600",
+          },
+          {
+            icon: <Book />,
+            label: "Questions Completed",
+            value: stats.questionsCompleted,
+            bg: "bg-purple-50",
+            fg: "text-purple-600",
+          },
         ].map(({ icon, label, value, bg, fg }) => (
           <Card key={label}>
             <CardContent className="flex items-center p-4 gap-4">
-              <div className={`p-3 rounded-lg ${bg} flex items-center justify-center`}>
+              <div
+                className={`p-3 rounded-lg ${bg} flex items-center justify-center`}
+              >
                 {React.cloneElement(icon as any, { className: fg, size: 20 })}
               </div>
               <div>
@@ -102,23 +133,28 @@ const Dashboard: React.FC = () => {
         <Card className="lg:col-span-2">
           <CardHeader className="flex items-center justify-between px-6 py-4">
             <CardTitle>Your Study Plan</CardTitle>
-            <Button variant="outline" size="sm" leftIcon={<Calendar size={14} />} className="whitespace-nowrap">
-              Full Plan
-            </Button>
+            {/* <Button variant="outline" size="sm" leftIcon={<Calendar size={14} />} className="whitespace-nowrap">
+      Full Plan
+    </Button> */}
           </CardHeader>
           <CardContent className="px-6 py-4">
+            <p className="text-center text-gray-500 py-8">Coming soon</p>
+          </CardContent>
+          {/* <CardContent className="px-6 py-4">
             {modules.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">No upcoming modules. Try a quick quiz!</p>
+              <p className="text-center text-gray-500 py-8">
+                No upcoming modules. Try a quick quiz!
+              </p>
             ) : (
               <div className="flex space-x-4 overflow-x-auto snap-x snap-mandatory py-2 hide-scrollbar">
-                {modules.map(mod => (
+                {modules.map((mod) => (
                   <div key={mod.id} className="snap-start flex-shrink-0 w-64">
                     <ModuleCard {...mod} />
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
+          </CardContent> */}
         </Card>
 
         {/* Overall Progress */}
@@ -127,20 +163,29 @@ const Dashboard: React.FC = () => {
             <CardTitle>Overall Progress</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center px-6 py-8">
-            <ProgressCircle value={overall.average} size={160} strokeWidth={10} valueClassName="text-xl" />
+            <ProgressCircle
+              value={overall.average}
+              size={160}
+              strokeWidth={10}
+              valueClassName="text-xl"
+            />
             {overall.average === 0 ? (
-              <p className="mt-4 text-gray-500 text-sm">Answer some questions to see progress.</p>
+              <p className="mt-4 text-gray-500 text-sm">
+                Answer some questions to see progress.
+              </p>
             ) : (
               <div className="mt-6 w-full space-y-4">
                 {[
-                  { label: 'Quantitative', percentage: overall.quantitative },
-                  { label: 'Verbal', percentage: overall.verbal },
-                  { label: 'Data Insights', percentage: overall.di },
+                  { label: "Quantitative", percentage: overall.quantitative },
+                  { label: "Verbal", percentage: overall.verbal },
+                  { label: "Data Insights", percentage: overall.di },
                 ].map(({ label, percentage }) => (
                   <div key={label}>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="font-medium text-gray-700">{label}</span>
-                      <span className="font-medium text-gray-900">{percentage}%</span>
+                      <span className="font-medium text-gray-900">
+                        {percentage}%
+                      </span>
                     </div>
                     <div className="h-2 bg-gray-200 rounded-full">
                       <div

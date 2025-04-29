@@ -113,6 +113,7 @@ const QuestionPage: React.FC = () => {
       user_id: user.id,
       question_id: displayed.id,
       is_correct: false,
+      time_taken:    time,
     };
     if (displayed.type === 'two-part-analysis') {
       if (selGrid.length !== 2) return;

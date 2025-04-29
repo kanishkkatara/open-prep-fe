@@ -17,6 +17,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LoadingScreen from "./components/ui/LoadingScreen";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ResourcesPage from "./pages/resources/ResourcesPage";
+import QuestionCreator from "./pages/questions/QuestionCreation";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -71,6 +72,8 @@ function App() {
             <Route path="questions" element={<QuestionBank />} />
             {/* Question Detail */}
             <Route path="questions/:id" element={<QuestionPage />} />
+            {/* Question Creation */}
+            <Route path="questions/create" element={<QuestionCreator />} />
             {/* Settings */}
             <Route
               path="settings"

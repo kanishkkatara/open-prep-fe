@@ -1,80 +1,151 @@
-import { BasicSettings, DashboardData, NextQuestionResponse, NotificationSettings, Question, QuestionResponse, QuestionSummary } from "./types";
+// src/lib/api.ts
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+import {
+  BasicSettings,
+  DashboardData,
+  NextQuestionResponse,
+  NotificationSettings,
+  Question,
+  QuestionResponse,
+  QuestionSummary,
+} from "./types";
+
+const BASE_URL = import.meta.env.VITE_API_URL as string;
+
+// ─── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Grab the current access token */
+function getAccessToken() {
+  return localStorage.getItem("access_token");
+}
+/** Grab the refresh token */
+function getRefreshToken() {
+  return localStorage.getItem("refresh_token");
+}
+/** Save new tokens */
+function saveTokens({ access_token, refresh_token }: { access_token: string; refresh_token?: string }) {
+  localStorage.setItem("access_token", access_token);
+  if (refresh_token) localStorage.setItem("refresh_token", refresh_token);
+}
+
+/** Build headers with JSON + Bearer */
 function getAuthHeaders() {
-  const token = localStorage.getItem("token");
+  const token = getAccessToken();
   return {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
+/**
+ * Universal fetch wrapper that:
+ *  1️⃣ Injects Bearer header
+ *  2️⃣ On 401: attempts /users/refresh using refresh_token
+ *  3️⃣ Retries original request once if refresh succeeds
+ *  4️⃣ Otherwise clears tokens + redirects to login
+ */
+async function authFetch(input: RequestInfo, init: RequestInit = {}, isRetry = false): Promise<Response> {
+  const res = await fetch(input, {
+    ...init,
+    headers: { ...(init.headers || {}), ...getAuthHeaders() },
+    credentials: init.credentials, // preserve if using cookies
+  });
+
+  if (res.status !== 401) {
+    return res;
+  }
+
+  // if already retried once, give up
+  if (isRetry) {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    window.location.href = "/auth/login";
+    throw new Error("Session expired");
+  }
+
+  // attempt token refresh
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    localStorage.removeItem("access_token");
+    window.location.href = "/auth/login";
+    throw new Error("No refresh token");
+  }
+
+  const refreshRes = await fetch(`${BASE_URL}/api/users/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!refreshRes.ok) {
+    // refresh failed → logout
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    window.location.href = "/auth/login";
+    throw new Error("Refresh failed");
+  }
+
+  const newTokens = await refreshRes.json() as { access_token: string; refresh_token?: string };
+  saveTokens(newTokens);
+
+  // retry original request with new token
+  return authFetch(input, init, /* isRetry: */ true);
+}
+
+// ─── Public API ────────────────────────────────────────────────────────────────
+
+/** Login via Google; server must return {access_token, refresh_token} */
 export async function loginWithGoogle(id_token: string) {
   const res = await fetch(`${BASE_URL}/api/users/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id_token }),
   });
-  return res.json(); // { access_token, token_type }
+  if (!res.ok) throw new Error(`Login failed: ${await res.text()}`);
+  const data = await res.json() as { access_token: string; refresh_token: string };
+  saveTokens(data);
+  return data;
 }
 
-export async function fetchCurrentUser(token: string) {
-  const res = await fetch(`${BASE_URL}/api/users/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+export async function fetchCurrentUser() {
+  const res = await authFetch(`${BASE_URL}/api/users/me`);
   return res.json();
 }
 
-export async function sendChatMessage({
-    userId,
-    message,
-    chatType,
-    context,
-  }: {
-    userId: string;
-    message: string;
-    chatType: "onboarding" | "tutoring";
-    context?: object;
-  }) {
-    const res = await fetch(`${BASE_URL}/api/chat/message`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-User-ID": userId.toString(),
-      },
-      body: JSON.stringify({
-        message,
-        chat_type: chatType,
-        context: context,
-      }),
-    });
-  
-    if (!res.ok) {
-      throw new Error("Failed to send chat message");
-    }
-  
-    return res.json(); // { reply: string, snippets_used?: string[] }
-  }
+export async function sendChatMessage(params: {
+  userId: string;
+  message: string;
+  chatType: "onboarding" | "tutoring";
+  context?: object;
+}) {
+  const { userId, message, chatType, context } = params;
+  const res = await authFetch(`${BASE_URL}/api/chat/message`, {
+    method: "POST",
+    headers: {
+      ...getAuthHeaders(),
+      "X-User-ID": userId,
+    },
+    body: JSON.stringify({ message, chat_type: chatType, context }),
+  });
+  if (!res.ok) throw new Error("Failed to send chat message");
+  return res.json();
+}
 
-  export async function fetchQuestions(limit = 100) {
-    const res = await fetch(`${BASE_URL}/api/questions?limit=${limit}`);
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Failed to fetch questions:", text);
-      throw new Error("Failed to fetch questions");
-    }
-    return res.json();  // Question[]
-  }
+export async function fetchQuestions(limit = 100): Promise<Question[]> {
+  const res = await authFetch(`${BASE_URL}/api/questions?limit=${limit}`);
+  if (!res.ok) throw new Error(`Failed to fetch questions: ${res.status}`);
+  return res.json();
+}
 
 export async function submitAnswer(params: {
   user_id: string;
   question_id: string;
   selected_option: string;
   is_correct: boolean;
+  time_taken:    number;
 }): Promise<NextQuestionResponse> {
-  const res = await fetch(`${BASE_URL}/api/questions/${params.question_id}/submit`, {
+  const res = await authFetch(`${BASE_URL}/api/questions/${params.question_id}/submit`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error("Failed to submit answer");
@@ -82,83 +153,56 @@ export async function submitAnswer(params: {
 }
 
 export async function fetchQuestionSummaries(params: {
-  type?: string[];          // ← was `type?: string`
+  type?: string[];
   tags?: string[];
   minDifficulty?: number;
   maxDifficulty?: number;
   page?: number;
   pageSize?: number;
 }): Promise<QuestionSummary[]> {
-  const {
-    type,
-    tags,
-    minDifficulty,
-    maxDifficulty,
-    page = 1,
-    pageSize = 20,
-  } = params;
-
+  const { type, tags, minDifficulty, maxDifficulty, page = 1, pageSize = 20 } = params;
   const skip = (page - 1) * pageSize;
   const qs = new URLSearchParams();
-
-  if (type) type.forEach((t) => qs.append("type", t));
-  if (tags) tags.forEach((t) => qs.append("tags", t));
-  if (minDifficulty !== undefined)
-    qs.set("minDifficulty", String(minDifficulty));
-  if (maxDifficulty !== undefined)
-    qs.set("maxDifficulty", String(maxDifficulty));
-
+  type?.forEach((t) => qs.append("type", t));
+  tags?.forEach((t) => qs.append("tags", t));
+  if (minDifficulty != null) qs.set("minDifficulty", String(minDifficulty));
+  if (maxDifficulty != null) qs.set("maxDifficulty", String(maxDifficulty));
   qs.set("skip", skip.toString());
   qs.set("limit", pageSize.toString());
 
-  const res = await fetch(`${BASE_URL}/api/questions?${qs.toString()}`);
+  const res = await authFetch(`${BASE_URL}/api/questions?${qs}`);
   if (!res.ok) throw new Error("Failed to fetch question summaries");
   return res.json();
 }
 
 export async function fetchQuestionById(
   id: string,
-  includeSub: boolean = true
+  includeSub = true
 ): Promise<QuestionResponse> {
   const url = new URL(`${BASE_URL}/api/questions/${id}`);
-  if (includeSub) url.searchParams.set('include_sub', 'true');
-
-  const res = await fetch(url.toString(), {
-    headers: { 'Content-Type': 'application/json' },
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    console.error(`Failed to fetch question ${id}:`, txt);
-    throw new Error(`Failed to fetch question ${id}`);
-  }
-  return res.json() as Promise<QuestionResponse>;
+  if (includeSub) url.searchParams.set("include_sub", "true");
+  const res = await authFetch(url.toString());
+  if (!res.ok) throw new Error(`Failed to fetch question ${id}`);
+  return res.json();
 }
 
 export async function getDashboard(): Promise<DashboardData> {
-  const res = await fetch(`${BASE_URL}/api/dashboard`, {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      'Accept': 'application/json',
-    },
-  });
+  const res = await authFetch(`${BASE_URL}/api/dashboard`);
   if (!res.ok) throw new Error(`Failed to fetch dashboard: ${res.status}`);
   return res.json();
 }
 
-// Settings endpoints
 export async function getBasicSettings(): Promise<BasicSettings> {
-  const res = await fetch(`${BASE_URL}/api/settings/basic`, {
+  const res = await authFetch(`${BASE_URL}/api/settings/basic`, {
     credentials: "include",
-    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Could not fetch basic settings");
   return res.json();
 }
 
-export async function updateBasicSettings(settings: BasicSettings) {
-  const res = await fetch(`${BASE_URL}/api/settings/basic`, {
+export async function updateBasicSettings(settings: BasicSettings): Promise<BasicSettings> {
+  const res = await authFetch(`${BASE_URL}/api/settings/basic`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     credentials: "include",
     body: JSON.stringify(settings),
   });
@@ -167,18 +211,18 @@ export async function updateBasicSettings(settings: BasicSettings) {
 }
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
-  const res = await fetch(`${BASE_URL}/api/settings/notifications`, {
+  const res = await authFetch(`${BASE_URL}/api/settings/notifications`, {
     credentials: "include",
-    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Could not fetch notification settings");
   return res.json();
 }
 
-export async function updateNotificationSettings(settings: NotificationSettings) {
-  const res = await fetch(`${BASE_URL}/api/settings/notifications`, {
+export async function updateNotificationSettings(
+  settings: NotificationSettings
+): Promise<NotificationSettings> {
+  const res = await authFetch(`${BASE_URL}/api/settings/notifications`, {
     method: "PUT",
-    headers: getAuthHeaders(),
     credentials: "include",
     body: JSON.stringify(settings),
   });
