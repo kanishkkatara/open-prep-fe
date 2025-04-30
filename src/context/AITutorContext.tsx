@@ -102,7 +102,7 @@ export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({
         setIsTyping(false);
       }
     },
-    [screenContext]
+    [screenContext, user]
   );
 
   const clearMessages = useCallback(() => {

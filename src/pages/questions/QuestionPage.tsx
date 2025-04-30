@@ -26,7 +26,7 @@ import type {
 const QuestionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { setScreenContext } = useAITutor();
+  const { setScreenContext, sendMessage } = useAITutor();
   const { user } = useUser();
 
   const [question, setQuestion] = useState<QuestionResponse | null>(null);
@@ -36,6 +36,7 @@ const QuestionPage: React.FC = () => {
   const [selAns, setSelAns] = useState<string | null>(null);
   const [selGrid, setSelGrid] = useState<CellCoordinate[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [explanationRequested, setExplanationRequested] = useState(false);
 
   // Timer state
   const [time, setTime] = useState(0);
@@ -44,7 +45,6 @@ const QuestionPage: React.FC = () => {
 
   // UI toggles
   const [flagged, setFlagged] = useState(false);
-  const [explain, setExplain] = useState(false);
 
   // Load question
   useEffect(() => {
@@ -63,9 +63,9 @@ const QuestionPage: React.FC = () => {
     setSubmitted(false);
     setNextQ(null);
     setIdx(0);
-    setExplain(false);
     setPaused(false);
     setTime(0);
+    setExplanationRequested(false);
 
     if (question) {
       setScreenContext({
@@ -113,7 +113,7 @@ const QuestionPage: React.FC = () => {
       user_id: user.id,
       question_id: displayed.id,
       is_correct: false,
-      time_taken:    time,
+      time_taken: time,
     };
     if (displayed.type === 'two-part-analysis') {
       if (selGrid.length !== 2) return;
@@ -137,8 +137,16 @@ const QuestionPage: React.FC = () => {
     if (nextQ) setQuestion(nextQ);
     else navigate('/app/dashboard');
   };
-  const onTogglePause = () => setPaused(p => !p);
-  const onReset = () => setTime(0);
+
+  const handleTogglePause = () => setPaused(p => !p);
+  const handleReset = () => setTime(0);
+
+  const handleShowExplanation = async () => {
+    if (explanationRequested) return;
+    setExplanationRequested(true);
+    // send a generic prompt without question text
+    await sendMessage('Please explain this question.');
+  };
 
   if (loading || !displayed) {
     return <div className="flex items-center justify-center h-full">Loading...</div>;
@@ -154,19 +162,19 @@ const QuestionPage: React.FC = () => {
       <div className="bg-white p-4 border-b flex justify-between items-center">
         <div className="flex items-center space-x-4">
           <Clock size={16} />
-          <Button variant="outline" size="sm" onClick={onTogglePause}>
+          <Button variant="outline" size="sm" onClick={handleTogglePause}>
             {paused ? <Pause size={16} /> : <Play size={16} />}
           </Button>
-
-          <Button variant="outline" size="sm" onClick={onReset}>
+          <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw size={16} />
           </Button>
           <span className="text-lg">{`${mm}:${ss}`}</span>
-          
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={() => setFlagged(f => !f)}><Flag size={18} className={flagged ? 'text-red-500' : 'text-gray-400'} /></button>
-          <X size={18} onClick={() => navigate('/app/questions')}/>
+          <button onClick={() => setFlagged(f => !f)}>
+            <Flag size={18} className={flagged ? 'text-red-500' : 'text-gray-400'} />
+          </button>
+          <X size={18} onClick={() => navigate('/app/questions')} />
         </div>
       </div>
 
@@ -178,7 +186,7 @@ const QuestionPage: React.FC = () => {
       )}
 
       {/* Main question content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <QuestionDisplay
           question={displayed}
           selectedAnswer={selAns}
@@ -188,16 +196,30 @@ const QuestionPage: React.FC = () => {
           isSubmitted={submitted}
         />
 
-        <div className="flex justify-between mt-6">
+        <div className="flex justify-between">
           {!submitted ? (
             <Button
               onClick={onSubmit}
-              disabled={displayed.type === 'two-part-analysis' ? selGrid.length !== 2 : !selAns}
+              disabled={
+                displayed.type === 'two-part-analysis'
+                  ? selGrid.length !== 2
+                  : !selAns
+              }
               leftIcon={<ChevronRight size={16} />}
-            >Submit Answer</Button>
+            >
+              Submit Answer
+            </Button>
           ) : (
             <div className="flex space-x-3">
-              <Button variant="outline" onClick={() => setExplain(e => !e)} leftIcon={<Info size={16} />}>{explain ? 'Hide Explanation' : 'Show Explanation'}</Button>
+              {/* Show Explanation only once, then disabled */}
+              <Button
+                variant="outline"
+                onClick={handleShowExplanation}
+                leftIcon={<Info size={16} />}
+                disabled={explanationRequested}
+              >
+                Show Explanation
+              </Button>
               <Button onClick={onNext} rightIcon={<ChevronRight size={16} />}>Next</Button>
             </div>
           )}

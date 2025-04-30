@@ -47,11 +47,6 @@ export default function ResourcesPage() {
 
   return (
     <div className="max-w-2xl mx-auto p-8 space-y-6 text-gray-800">
-      <h1 className="text-3xl font-bold text-gray-900">Help & Resources</h1>
-      <p className="text-gray-600">
-        Here are some of the top GMAT prep resources to guide your study
-        journey:
-      </p>
       <div className="space-y-4">
         {resources.map((res, idx) => (
           <div key={idx} className="bg-white shadow rounded-lg p-4">

@@ -68,23 +68,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <main className="space-y-10 px-6 py-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="mt-1 text-gray-600">
-            Welcome back, <span className="font-medium">{user?.name}</span>!
-            Here’s your study progress.
-          </p>
-        </div>
-        <Button
-          leftIcon={<Play size={18} />}
-          onClick={() => navigate("/app/questions")}
-          className="whitespace-nowrap"
-        >
-          Resume Learning
-        </Button>
-      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
