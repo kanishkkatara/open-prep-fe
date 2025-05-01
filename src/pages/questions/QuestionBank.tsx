@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import * as Slider from "@radix-ui/react-slider";
-import katex from 'katex';
-import 'katex/dist/katex.min.css';
+import * as Switch from "@radix-ui/react-switch";
+import katex from "katex";
+import "katex/dist/katex.min.css";
 import { fetchQuestionSummaries } from "../../lib/api";
 import type { QuestionSummary } from "../../lib/types";
 import Button from "../../components/ui/Button";
@@ -26,7 +27,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 // Render LaTeX in preview text
-const renderContent = (text: string = ''): string =>
+const renderContent = (text: string = ""): string =>
   text.replace(/\\\((.+?)\\\)/g, (_, expr) =>
     katex.renderToString(expr, { throwOnError: false })
   );
@@ -42,6 +43,7 @@ const QuestionBank: React.FC = () => {
   const [selectedTypes, setSelectedTypes] = useState<Option[]>([]);
   const [selectedTags, setSelectedTags] = useState<Option[]>([]);
   const [difficultyRange, setDifficultyRange] = useState<number[]>([1, 7]);
+  const [onlyNew, setOnlyNew] = useState<boolean>(false); // 🔥 NEW toggle state
 
   // debounced filters
   const debouncedTypes = useDebounce(selectedTypes, 500);
@@ -58,12 +60,12 @@ const QuestionBank: React.FC = () => {
     label,
   }));
   const tagOptions: Option[] = useMemo(() => {
-    const types = debouncedTypes.map(t => t.value);
+    const types = debouncedTypes.map((t) => t.value);
     const acc: Record<string, Option> = {};
     questionCategories
-      .filter(cat => types.includes(cat.type))
-      .forEach(cat => {
-        cat.tags.forEach(tag => {
+      .filter((cat) => types.includes(cat.type))
+      .forEach((cat) => {
+        cat.tags.forEach((tag) => {
           acc[tag.value] = { value: tag.value, label: tag.label };
         });
       });
@@ -76,33 +78,34 @@ const QuestionBank: React.FC = () => {
       setLoading(true);
       try {
         const data = await fetchQuestionSummaries({
-          type: debouncedTypes.map(t => t.value),
-          tags: debouncedTags.map(t => t.value),
+          type: debouncedTypes.map((t) => t.value),
+          tags: debouncedTags.map((t) => t.value),
           minDifficulty: debouncedDifficulty[0],
           maxDifficulty: debouncedDifficulty[1],
+          progress_filter: onlyNew ? "non-attempted" : "all",
           page,
           pageSize,
         });
-        setQuestions(data.filter(q => !q.parentId));
+        setQuestions(data.filter((q) => !q.parentId));
       } catch (e) {
         console.error(e);
       } finally {
         setLoading(false);
       }
     })();
-  }, [debouncedTypes, debouncedTags, debouncedDifficulty, page]);
+  }, [debouncedTypes, debouncedTags, debouncedDifficulty, onlyNew, page]);
 
   // reset page on filter change
   useEffect(() => {
     setPage(1);
-  }, [debouncedTypes, debouncedTags, debouncedDifficulty]);
+  }, [debouncedTypes, debouncedTags, debouncedDifficulty, onlyNew]);
 
   return (
     <div className="p-6">
       {/* Filters */}
       <Card className="mb-6 bg-white shadow rounded-lg">
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 items-center">
             {/* Type */}
             <div>
               <label className="block text-sm font-medium mb-1">Type</label>
@@ -110,12 +113,12 @@ const QuestionBank: React.FC = () => {
                 options={typeOptions}
                 isMulti
                 value={selectedTypes}
-                onChange={v => setSelectedTypes(v as Option[])}
+                onChange={(v) => setSelectedTypes(v as Option[])}
                 placeholder="Select types..."
                 classNamePrefix="react-select"
                 menuPortalTarget={document.body}
                 menuPosition="fixed"
-                styles={{ menuPortal: base => ({ ...base, zIndex: 1000 }) }}
+                styles={{ menuPortal: (base) => ({ ...base, zIndex: 1000 }) }}
               />
             </div>
 
@@ -126,42 +129,63 @@ const QuestionBank: React.FC = () => {
                 options={tagOptions}
                 isMulti
                 value={selectedTags}
-                onChange={v => setSelectedTags(v as Option[])}
+                onChange={(v) => setSelectedTags(v as Option[])}
                 placeholder="Select tags..."
                 classNamePrefix="react-select"
                 isDisabled={!debouncedTypes.length}
                 menuPortalTarget={document.body}
                 menuPosition="fixed"
-                styles={{ menuPortal: base => ({ ...base, zIndex: 1000 }) }}
+                styles={{ menuPortal: (base) => ({ ...base, zIndex: 1000 }) }}
               />
             </div>
-          </div>
 
-          <div className="mt-6">
-            <label className="block text-sm font-medium mb-1">
-              Difficulty: {difficultyRange[0]} – {difficultyRange[1]}
-            </label>
-            <Slider.Root
-              className="relative flex items-center h-6 select-none w-full"
-              value={difficultyRange}
-              onValueChange={setDifficultyRange}
-              min={1}
-              max={7}
-              step={1}
-              aria-label="Difficulty range"
-            >
-              <Slider.Track className="bg-gray-200 relative flex-1 h-1 rounded-full">
-                <Slider.Range className="absolute bg-blue-500 h-full rounded-full" />
-              </Slider.Track>
-              {[0, 1].map(i => (
-                <Slider.Thumb
-                  key={i}
-                  className="block w-4 h-4 bg-white border-2 border-blue-500 rounded-full shadow focus:outline-none"
-                />
-              ))}
-            </Slider.Root>
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              {[1,2,3,4,5,6,7].map(n => <span key={n}>{n}</span>)}
+            {/* Show only new questions toggle */}
+            <div className="flex items-center space-x-3">
+              <label
+                htmlFor="onlyNew"
+                className="text-sm font-medium whitespace-nowrap"
+              >
+                Show only new questions
+              </label>
+              <Switch.Root
+                id="onlyNew"
+                checked={onlyNew}
+                onCheckedChange={setOnlyNew}
+                className="w-11 h-6 bg-gray-300 rounded-full relative data-[state=checked]:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <Switch.Thumb className="block w-5 h-5 bg-white rounded-full shadow transition-transform translate-x-1 data-[state=checked]:translate-x-6" />
+              </Switch.Root>
+            </div>
+
+            {/* Difficulty slider */}
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Difficulty: {difficultyRange[0]} – {difficultyRange[1]}
+              </label>
+              <Slider.Root
+                className="relative flex items-center h-6 select-none w-full"
+                value={difficultyRange}
+                onValueChange={setDifficultyRange}
+                min={1}
+                max={7}
+                step={1}
+                aria-label="Difficulty range"
+              >
+                <Slider.Track className="bg-gray-200 relative flex-1 h-1 rounded-full">
+                  <Slider.Range className="absolute bg-blue-500 h-full rounded-full" />
+                </Slider.Track>
+                {[0, 1].map((i) => (
+                  <Slider.Thumb
+                    key={i}
+                    className="block w-4 h-4 bg-white border-2 border-blue-500 rounded-full shadow focus:outline-none"
+                  />
+                ))}
+              </Slider.Root>
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <span key={n}>{n}</span>
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>
@@ -172,21 +196,29 @@ const QuestionBank: React.FC = () => {
         <div>Loading...</div>
       ) : (
         <ul className="divide-y">
-          {questions.map(q => (
+          {questions.map((q) => (
             <li
               key={q.id}
-              className="py-4 px-2 hover:bg-gray-50 cursor-pointer"
+              className={`py-4 pl-3 pr-2 hover:bg-gray-50 cursor-pointer border-l-4 border-t-0 border-r-0 border-b-0
+                ${
+                  q.attempted
+                    ? q.correct
+                      ? "border-l-green-500"
+                      : "border-l-red-500"
+                    : "border-l-transparent"
+                }
+              `}
               onClick={() => navigate(`/app/questions/${q.id}`)}
             >
               <div className="flex items-baseline space-x-3">
-                {/* Type badge */}
                 <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full capitalize whitespace-nowrap">
                   {q.type.replace("-", " ")}
                 </span>
-                {/* Preview text with math rendering */}
                 <span
                   className="text-lg font-medium truncate"
-                  dangerouslySetInnerHTML={{ __html: renderContent(q.preview_text || '') }}
+                  dangerouslySetInnerHTML={{
+                    __html: renderContent(q.preview_text || ""),
+                  }}
                 />
               </div>
               <div className="text-sm text-gray-600 mt-1">
@@ -199,13 +231,13 @@ const QuestionBank: React.FC = () => {
 
       {/* Pagination */}
       <div className="flex justify-between mt-6">
-        <Button disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+        <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
           Previous
         </Button>
         <span className="self-center">Page {page}</span>
         <Button
           disabled={questions.length < pageSize}
-          onClick={() => setPage(p => p + 1)}
+          onClick={() => setPage((p) => p + 1)}
         >
           Next
         </Button>

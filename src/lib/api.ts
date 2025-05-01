@@ -159,10 +159,21 @@ export async function fetchQuestionSummaries(params: {
   maxDifficulty?: number;
   page?: number;
   pageSize?: number;
+  progress_filter?: string;
 }): Promise<QuestionSummary[]> {
-  const { type, tags, minDifficulty, maxDifficulty, page = 1, pageSize = 20 } = params;
+  const {
+    type,
+    tags,
+    minDifficulty,
+    maxDifficulty,
+    page = 1,
+    pageSize = 20,
+    progress_filter
+  } = params;
+
   const skip = (page - 1) * pageSize;
   const qs = new URLSearchParams();
+
   type?.forEach((t) => qs.append("type", t));
   tags?.forEach((t) => qs.append("tags", t));
   if (minDifficulty != null) qs.set("minDifficulty", String(minDifficulty));
@@ -170,10 +181,14 @@ export async function fetchQuestionSummaries(params: {
   qs.set("skip", skip.toString());
   qs.set("limit", pageSize.toString());
 
+  if (progress_filter) qs.set("progress_filter", progress_filter);
+
   const res = await authFetch(`${BASE_URL}/api/questions?${qs}`);
   if (!res.ok) throw new Error("Failed to fetch question summaries");
+
   return res.json();
 }
+
 
 export async function fetchQuestionById(
   id: string,

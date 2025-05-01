@@ -34,9 +34,11 @@ export interface Question {
     type:          string;
     difficulty:    number;
     tags:          string[];
-    parentId?:     string;   // matches alias
+    parentId?:     string;
     order?:        number;
     preview_text: string;
+    attempted:     boolean;
+    correct?:      boolean | null;
   }
 
 // Raw API item shape
