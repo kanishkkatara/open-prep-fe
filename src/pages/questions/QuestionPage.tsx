@@ -1,4 +1,3 @@
-// src/pages/questions/QuestionPage.tsx
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -69,7 +68,8 @@ const QuestionPage: React.FC = () => {
 
     if (question) {
       setScreenContext({
-        blocks: question.kind === 'composite' ? question.passage : question.content,
+        blocks:
+          question.kind === 'composite' ? question.passage : question.content,
         options: question.kind === 'composite' ? [] : question.options,
       });
     }
@@ -124,7 +124,10 @@ const QuestionPage: React.FC = () => {
     }
     try {
       const resp = await submitAnswer(payload);
-      if (question?.kind === 'composite' && idx + 1 < question.subquestions.length) {
+      if (
+        question?.kind === 'composite' &&
+        idx + 1 < question.subquestions.length
+      ) {
         setIdx(i => i + 1);
       } else {
         setNextQ(resp.next_question || null);
@@ -144,12 +147,15 @@ const QuestionPage: React.FC = () => {
   const handleShowExplanation = async () => {
     if (explanationRequested) return;
     setExplanationRequested(true);
-    // send a generic prompt without question text
     await sendMessage('Please explain this question.');
   };
 
   if (loading || !displayed) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        Loading...
+      </div>
+    );
   }
 
   // Format mm:ss
@@ -172,7 +178,10 @@ const QuestionPage: React.FC = () => {
         </div>
         <div className="flex items-center space-x-2">
           <button onClick={() => setFlagged(f => !f)}>
-            <Flag size={18} className={flagged ? 'text-red-500' : 'text-gray-400'} />
+            <Flag
+              size={18}
+              className={flagged ? 'text-red-500' : 'text-gray-400'}
+            />
           </button>
           <X size={18} onClick={() => navigate('/app/questions')} />
         </div>
@@ -181,12 +190,28 @@ const QuestionPage: React.FC = () => {
       {/* Composite passage */}
       {question && question.kind === 'composite' && (
         <div className="p-6 border-b">
-          <PassageDisplay blocks={question.passage} questionType={question.type} />
+          <PassageDisplay
+            blocks={question.passage}
+            questionType={question.type}
+          />
         </div>
       )}
 
       {/* Main question content */}
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Type, Difficulty & Tags */}
+        <div className="flex items-center space-x-4">
+          <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full capitalize">
+            {displayed.type.replace('-', ' ')}
+          </span>
+          <span className="text-sm text-gray-600">
+            Difficulty: {displayed.difficulty}
+          </span>
+          <span className="text-sm text-gray-600">
+            Tags: {displayed.tags.join(', ')}
+          </span>
+        </div>
+
         <QuestionDisplay
           question={displayed}
           selectedAnswer={selAns}
@@ -211,7 +236,6 @@ const QuestionPage: React.FC = () => {
             </Button>
           ) : (
             <div className="flex space-x-3">
-              {/* Show Explanation only once, then disabled */}
               <Button
                 variant="outline"
                 onClick={handleShowExplanation}
@@ -220,7 +244,9 @@ const QuestionPage: React.FC = () => {
               >
                 Show Explanation
               </Button>
-              <Button onClick={onNext} rightIcon={<ChevronRight size={16} />}>Next</Button>
+              <Button onClick={onNext} rightIcon={<ChevronRight size={16} />}>
+                Next
+              </Button>
             </div>
           )}
         </div>

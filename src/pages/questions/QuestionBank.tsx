@@ -1,9 +1,9 @@
-// src/pages/questions/QuestionBank.tsx
-
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Select from "react-select";
 import * as Slider from "@radix-ui/react-slider";
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { fetchQuestionSummaries } from "../../lib/api";
 import type { QuestionSummary } from "../../lib/types";
 import Button from "../../components/ui/Button";
@@ -24,6 +24,12 @@ function useDebounce<T>(value: T, delay: number): T {
   }, [value, delay]);
   return debounced;
 }
+
+// Render LaTeX in preview text
+const renderContent = (text: string = ''): string =>
+  text.replace(/\\\((.+?)\\\)/g, (_, expr) =>
+    katex.renderToString(expr, { throwOnError: false })
+  );
 
 const QuestionBank: React.FC = () => {
   const navigate = useNavigate();
@@ -173,26 +179,15 @@ const QuestionBank: React.FC = () => {
               onClick={() => navigate(`/app/questions/${q.id}`)}
             >
               <div className="flex items-baseline space-x-3">
-                {/* 1-line badge */}
-                <span className="
-                  inline-flex
-                  items-center
-                  bg-blue-100
-                  text-blue-800
-                  text-xs
-                  font-medium
-                  px-2
-                  py-0.5
-                  rounded-full
-                  capitalize
-                  whitespace-nowrap
-                ">
+                {/* Type badge */}
+                <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full capitalize whitespace-nowrap">
                   {q.type.replace("-", " ")}
                 </span>
-                {/* Preview text */}
-                <span className="text-lg font-medium truncate">
-                  {q.preview_text?.trim()}
-                </span>
+                {/* Preview text with math rendering */}
+                <span
+                  className="text-lg font-medium truncate"
+                  dangerouslySetInnerHTML={{ __html: renderContent(q.preview_text || '') }}
+                />
               </div>
               <div className="text-sm text-gray-600 mt-1">
                 Difficulty: {q.difficulty} | Tags: {q.tags.join(", ")}
