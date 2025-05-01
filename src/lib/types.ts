@@ -36,9 +36,10 @@ export interface Question {
     tags:          string[];
     parentId?:     string;
     order?:        number;
-    preview_text: string;
+    preview_text:  string;
     attempted:     boolean;
     correct?:      boolean | null;
+    first_subquestion_id?: string | null;
   }
 
 // Raw API item shape
@@ -140,16 +141,19 @@ export interface BaseQuestion {
   answers: AnswerSchema;
   tags: string[];
   difficulty: number;
+  order?: number | null;
+  parent: BaseQuestion | null;
 }
 
 export interface SingleQuestion extends BaseQuestion {
   kind: 'single';
+  parent: BaseQuestion;
 }
 
 export interface CompositeQuestion extends BaseQuestion {
   kind: 'composite';
   groupId: string;
-  passage: ContentBlock[];
+  parent: BaseQuestion | null;
   subquestions: SingleQuestion[];
   totalSubquestions: number;
   nextGroupId: string | null;
@@ -157,7 +161,7 @@ export interface CompositeQuestion extends BaseQuestion {
 
 export type QuestionResponse = SingleQuestion | CompositeQuestion;
 
+/** 🔥 Updated to match backend — now only returns next_question_id */
 export interface NextQuestionResponse {
-  next_question: QuestionResponse | null;
+  next_question_id: string | null;
 }
-

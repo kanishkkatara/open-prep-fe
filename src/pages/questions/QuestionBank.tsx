@@ -16,7 +16,8 @@ interface Option {
   label: string;
 }
 
-// debounce hook
+// ─── Debounce hook ─────────────────────────────────────────────────────────────
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState<T>(value);
   useEffect(() => {
@@ -26,39 +27,46 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
-// Render LaTeX in preview text
+// ─── LaTeX renderer ────────────────────────────────────────────────────────────
+
 const renderContent = (text: string = ""): string =>
   text.replace(/\\\((.+?)\\\)/g, (_, expr) =>
     katex.renderToString(expr, { throwOnError: false })
   );
 
+// ─── Component ─────────────────────────────────────────────────────────────────
+
 const QuestionBank: React.FC = () => {
   const navigate = useNavigate();
 
-  // state
+  // ─── State ───────────────────────────────────────────────────────────────────
+
   const [questions, setQuestions] = useState<QuestionSummary[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // filters
+  // Filters
   const [selectedTypes, setSelectedTypes] = useState<Option[]>([]);
   const [selectedTags, setSelectedTags] = useState<Option[]>([]);
   const [difficultyRange, setDifficultyRange] = useState<number[]>([1, 7]);
-  const [onlyNew, setOnlyNew] = useState<boolean>(false); // 🔥 NEW toggle state
+  const [onlyNew, setOnlyNew] = useState<boolean>(false);
 
-  // debounced filters
+  // Pagination
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+
+  // ─── Debounced values ────────────────────────────────────────────────────────
+
   const debouncedTypes = useDebounce(selectedTypes, 500);
   const debouncedTags = useDebounce(selectedTags, 500);
   const debouncedDifficulty = useDebounce(difficultyRange, 500);
 
-  // pagination
-  const [page, setPage] = useState(1);
-  const pageSize = 20;
+  // ─── Options ─────────────────────────────────────────────────────────────────
 
-  // type & tag options
   const typeOptions: Option[] = questionCategories.map(({ type, label }) => ({
     value: type,
     label,
   }));
+
   const tagOptions: Option[] = useMemo(() => {
     const types = debouncedTypes.map((t) => t.value);
     const acc: Record<string, Option> = {};
@@ -72,40 +80,52 @@ const QuestionBank: React.FC = () => {
     return Object.values(acc);
   }, [debouncedTypes]);
 
-  // fetch summaries
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const data = await fetchQuestionSummaries({
-          type: debouncedTypes.map((t) => t.value),
-          tags: debouncedTags.map((t) => t.value),
-          minDifficulty: debouncedDifficulty[0],
-          maxDifficulty: debouncedDifficulty[1],
-          progress_filter: onlyNew ? "non-attempted" : "all",
-          page,
-          pageSize,
-        });
-        setQuestions(data.filter((q) => !q.parentId));
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [debouncedTypes, debouncedTags, debouncedDifficulty, onlyNew, page]);
+  // ─── Fetch summaries ─────────────────────────────────────────────────────────
+  
+useEffect(() => {
+  let isCurrent = true;             // ← guard for stale requests
+  setLoading(true);
 
-  // reset page on filter change
+  (async () => {
+    try {
+      const data = await fetchQuestionSummaries({
+        type:    debouncedTypes.map((t) => t.value),
+        tags:    debouncedTags.map((t) => t.value),
+        minDifficulty: debouncedDifficulty[0],
+        maxDifficulty: debouncedDifficulty[1],
+        progress_filter: onlyNew ? "non-attempted" : "all",
+        page,
+        pageSize,
+      });
+      if (!isCurrent) return;      // ← ignore if a newer fetch was started
+      setQuestions(data.filter((q) => !q.parentId));
+    } catch (e) {
+      if (isCurrent) console.error(e);
+    } finally {
+      if (isCurrent) setLoading(false);
+    }
+  })();
+
+  return () => {
+    isCurrent = false;             // ← mark this effect as “stale” on cleanup
+  };
+}, [debouncedTypes, debouncedTags, debouncedDifficulty, onlyNew, page]);
+
+  // Reset page on filter change
   useEffect(() => {
     setPage(1);
   }, [debouncedTypes, debouncedTags, debouncedDifficulty, onlyNew]);
 
+  // ─── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <div className="p-6">
+
       {/* Filters */}
       <Card className="mb-6 bg-white shadow rounded-lg">
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 items-center">
+
             {/* Type */}
             <div>
               <label className="block text-sm font-medium mb-1">Type</label>
@@ -208,7 +228,10 @@ const QuestionBank: React.FC = () => {
                     : "border-l-transparent"
                 }
               `}
-              onClick={() => navigate(`/app/questions/${q.id}`)}
+              onClick={() => {
+                const targetId = q.first_subquestion_id || q.id; // ✅ NEW LOGIC
+                navigate(`/app/questions/${targetId}`);
+              }}
             >
               <div className="flex items-baseline space-x-3">
                 <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full capitalize whitespace-nowrap">

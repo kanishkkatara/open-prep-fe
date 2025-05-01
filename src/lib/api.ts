@@ -137,17 +137,20 @@ export async function fetchQuestions(limit = 100): Promise<Question[]> {
   return res.json();
 }
 
+export type NextQuestionIdResponse = { next_question_id: string | null };
+
 export async function submitAnswer(params: {
   user_id: string;
   question_id: string;
   selected_option: string;
   is_correct: boolean;
-  time_taken:    number;
-}): Promise<NextQuestionResponse> {
+  time_taken: number;
+}): Promise<NextQuestionIdResponse> {
   const res = await authFetch(`${BASE_URL}/api/questions/${params.question_id}/submit`, {
     method: "POST",
     body: JSON.stringify(params),
   });
+
   if (!res.ok) throw new Error("Failed to submit answer");
   return res.json();
 }
@@ -191,15 +194,16 @@ export async function fetchQuestionSummaries(params: {
 
 
 export async function fetchQuestionById(
-  id: string,
-  includeSub = true
+  questionId: string
 ): Promise<QuestionResponse> {
-  const url = new URL(`${BASE_URL}/api/questions/${id}`);
-  if (includeSub) url.searchParams.set("include_sub", "true");
+  const url = new URL(`${BASE_URL}/api/questions/${questionId}`);
+
   const res = await authFetch(url.toString());
-  if (!res.ok) throw new Error(`Failed to fetch question ${id}`);
+
+  if (!res.ok) throw new Error(`Failed to fetch question ${questionId}`);
   return res.json();
 }
+
 
 export async function getDashboard(): Promise<DashboardData> {
   const res = await authFetch(`${BASE_URL}/api/dashboard`);

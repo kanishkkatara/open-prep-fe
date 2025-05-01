@@ -42,20 +42,6 @@ export interface QuestionCategory {
         { value: 'data-interpretation', label: 'Data Interpretation' }
       ]
     },
-    // {
-    //   type: 'sentence-correction',
-    //   label: 'Sentence Correction',
-    //   tags: [
-    //     { value: 'grammar', label: 'Grammar' },
-    //     { value: 'verb-tenses', label: 'Verb Tenses' },
-    //     { value: 'subject-verb-agreement', label: 'Subject-Verb Agreement' },
-    //     { value: 'pronouns', label: 'Pronouns' },
-    //     { value: 'parallelism', label: 'Parallelism' },
-    //     { value: 'modifiers', label: 'Modifiers' },
-    //     { value: 'idioms', label: 'Idioms' },
-    //     { value: 'punctuation', label: 'Punctuation' }
-    //   ]
-    // },
     {
       type: 'critical-reasoning',
       label: 'Critical Reasoning',
@@ -83,13 +69,35 @@ export interface QuestionCategory {
       ]
     },
     {
-      type: 'integrated-reasoning',
-      label: 'Integrated Reasoning',
+      type: 'multi-source-reasoning',
+      label: 'Multi Source Reasoning',
       tags: [
-        { value: 'multi-source-reasoning', label: 'Multi-Source Reasoning' },
-        { value: 'graphics-interpretation', label: 'Graphics Interpretation' },
-        { value: 'two-part-analysis', label: 'Two-Part Analysis' },
-        { value: 'table-analysis', label: 'Table Analysis' }
+        { value: 'math-related', label: 'Math Related' },
+        { value: 'non-math-related', label: 'Non-Math Related' },
+      ]
+    },
+    {
+      type: 'two-part-analysis',
+      label: 'Two-Part Analysis',
+      tags: [
+        { value: 'math-related', label: 'Math Related' },
+        { value: 'non-math-related', label: 'Non-Math Related' },
+      ]
+    },
+    {
+      type: 'table-analysis',
+      label: 'Table Analysis',
+      tags: [
+        { value: 'math-related', label: 'Math Related' },
+        { value: 'non-math-related', label: 'Non-Math Related' },
+      ]
+    },
+    {
+      type: 'graphics-interpretation',
+      label: 'Graphics Interpretation',
+      tags: [
+        { value: 'math-related', label: 'Math Related' },
+        { value: 'non-math-related', label: 'Non-Math Related' },
       ]
     }
   ];

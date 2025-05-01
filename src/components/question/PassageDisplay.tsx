@@ -6,23 +6,23 @@ import type { ContentBlock } from "../../lib/types";
 
 interface PassageDisplayProps {
   blocks: ContentBlock[];
-  questionType: string;      // now required
+  questionType: string; // now required
 }
 
 const sectionLabels: Record<string, string> = {
   "multi-source-reasoning": "Multi-Source Reasoning",
-  "reading-comprehension":  "Reading Comprehension",
-  "critical-reasoning":     "Critical Reasoning",
-  "data-sufficiency":       "Data Sufficiency",
-  "problem-solving":        "Problem Solving",
+  "reading-comprehension": "Reading Comprehension",
+  "critical-reasoning": "Critical Reasoning",
+  "data-sufficiency": "Data Sufficiency",
+  "problem-solving": "Problem Solving",
   // add more if needed
 };
 
 const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType }) => {
-  // 1) Group blocks into tab-indexed sources
+  // --- Group blocks into tab-indexed sources ---
   const sources = useMemo(() => {
     const map = new Map<number, ContentBlock[]>();
-    blocks.forEach((blk) => {
+    (blocks || []).forEach((blk) => {
       let ti = blk.data?.tabIndex;
       if (typeof ti === "string") ti = parseInt(ti, 10);
       if (typeof ti !== "number" || isNaN(ti)) ti = 0;
@@ -34,10 +34,10 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType })
       .map(([idx, blks]) => ({ idx, blks }));
   }, [blocks]);
 
-  // 2) Which tab is active
+  // Active tab
   const [active, setActive] = useState(0);
 
-  // 3) Render each block type
+  // --- Block renderer ---
   const renderBlock = (blk: ContentBlock, i: number) => {
     switch (blk.type) {
       case "paragraph":
@@ -52,9 +52,7 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType })
             <thead className="bg-gray-100">
               <tr>
                 {blk.headers?.map((h, j) => (
-                  <th key={j} className="px-2 py-1 text-left">
-                    {h}
-                  </th>
+                  <th key={j} className="px-2 py-1 text-left">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -62,9 +60,7 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType })
               {blk.rows?.map((row, r) => (
                 <tr key={r}>
                   {row.map((cell, c) => (
-                    <td key={c} className="border px-2 py-1">
-                      {cell}
-                    </td>
+                    <td key={c} className="border px-2 py-1">{cell}</td>
                   ))}
                 </tr>
               ))}
@@ -97,23 +93,12 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType })
     }
   };
 
-  // 4) Only show tabs for MSR with >1 source
-  const showTabs =
-    questionType === "multi-source-reasoning" && sources.length > 1;
-
-  // 5) Compute the badge label
-  const badge = sectionLabels[questionType] || questionType.replace(/-/g, " ");
+  // --- Tabs only for MSR if multiple sources ---
+  const showTabs = questionType === "multi-source-reasoning" && sources.length > 1;
 
   return (
     <Card>
       <CardContent>
-        {/* Section badge */}
-        <div className="mb-4">
-          <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-            {badge}
-          </span>
-        </div>
-
         {/* Tabs */}
         {showTabs && (
           <div className="mb-4 flex space-x-2 border-b">
@@ -135,7 +120,9 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType })
 
         {/* Active source blocks */}
         <div>
-          {sources[active].blks.map((blk, i) => renderBlock(blk, i))}
+          {sources.length > 0 && sources[active]
+            ? sources[active].blks.map((blk, i) => renderBlock(blk, i))
+            : <p className="text-gray-500">No content available for this passage.</p>}
         </div>
       </CardContent>
     </Card>
