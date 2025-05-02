@@ -68,7 +68,7 @@ export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({
         const userId = user.id.toString();
         // Determine which context to send: override or stored
         const ctx = overrideContext ?? screenContext;
-        const apiContext = ctx ? { question_text: ctx } : undefined;
+        const apiContext = ctx ? { question: ctx } : undefined;
 
         // 2️⃣ Call your API, passing context
         const response = await sendChatMessage({

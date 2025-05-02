@@ -74,13 +74,7 @@ const QuestionPage: React.FC = () => {
     setExplanationRequested(false);
 
     if (question) {
-      const q =
-        question.kind === "composite" ? question.subquestions[0] : question;
-
-      setScreenContext({
-        blocks: q.content,
-        options: q.options || [],
-      });
+      setScreenContext({id: question.id, parent_id: question.parent?.id});
     }
   }, [question, setScreenContext]);
 
