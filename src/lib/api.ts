@@ -137,15 +137,13 @@ export async function fetchQuestions(limit = 100): Promise<Question[]> {
   return res.json();
 }
 
-export type NextQuestionIdResponse = { next_question_id: string | null };
-
 export async function submitAnswer(params: {
   user_id: string;
   question_id: string;
   selected_option: string;
   is_correct: boolean;
   time_taken: number;
-}): Promise<NextQuestionIdResponse> {
+}): Promise<NextQuestionResponse> {
   const res = await authFetch(`${BASE_URL}/api/questions/${params.question_id}/submit`, {
     method: "POST",
     body: JSON.stringify(params),
@@ -246,5 +244,22 @@ export async function updateNotificationSettings(
     body: JSON.stringify(settings),
   });
   if (!res.ok) throw new Error("Could not update notification settings");
+  return res.json();
+}
+
+export async function updateQuestionIsDeleted(
+  questionId: string,
+  is_deleted: boolean
+): Promise<QuestionResponse> {
+  const res = await authFetch(
+    `${BASE_URL}/api/questions/${questionId}/isdeleted`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ is_deleted }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to update isdeleted: ${res.status}`);
+  }
   return res.json();
 }

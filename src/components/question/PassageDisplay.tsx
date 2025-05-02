@@ -9,15 +9,6 @@ interface PassageDisplayProps {
   questionType: string; // now required
 }
 
-const sectionLabels: Record<string, string> = {
-  "multi-source-reasoning": "Multi-Source Reasoning",
-  "reading-comprehension": "Reading Comprehension",
-  "critical-reasoning": "Critical Reasoning",
-  "data-sufficiency": "Data Sufficiency",
-  "problem-solving": "Problem Solving",
-  // add more if needed
-};
-
 const PassageDisplay: React.FC<PassageDisplayProps> = ({ blocks, questionType }) => {
   // --- Group blocks into tab-indexed sources ---
   const sources = useMemo(() => {

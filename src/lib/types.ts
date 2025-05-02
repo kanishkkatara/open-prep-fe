@@ -71,10 +71,6 @@ export type DashboardData = {
   };
 };
 
-export interface NextQuestionResponse {
-  next_question: QuestionResponse | null;
-}
-
 export interface BasicSettings {
   name: string;
   email: string;
@@ -143,6 +139,7 @@ export interface BaseQuestion {
   difficulty: number;
   order?: number | null;
   parent: BaseQuestion | null;
+  is_deleted: boolean;
 }
 
 export interface SingleQuestion extends BaseQuestion {
