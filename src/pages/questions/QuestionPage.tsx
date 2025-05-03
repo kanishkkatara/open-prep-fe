@@ -151,9 +151,11 @@ const QuestionPage: React.FC = () => {
     }
     // two-part grid
     else if (displayed.type === "two-part-analysis") {
-      if (selGrid.length !== 2) return;
+      const colCount = displayed.content.find(b => b.type === "ds_grid")?.col_headers?.length ?? 0;
+      if (selGrid.length !== colCount) return;
       payload.selected_options = selGrid;
     }
+    
     // standard MCQ
     else {
       if (!selAns) return;
@@ -281,9 +283,12 @@ const QuestionPage: React.FC = () => {
                         (b, i) => b.type === "dropdown" && dropdownValues[i] == null
                       )
                     : displayed.type === "two-part-analysis"
-                    ? selGrid.length !== 2
+                    ? selGrid.length !== (
+                        (displayed.content.find(b => b.type === "ds_grid")?.col_headers?.length ?? 0)
+                      )
                     : !selAns
                 }
+                
                 leftIcon={<ChevronRight size={16} />}
               >
                 Submit Answer
