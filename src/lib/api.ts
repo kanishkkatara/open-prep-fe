@@ -137,14 +137,15 @@ export async function fetchQuestions(limit = 100): Promise<Question[]> {
   return res.json();
 }
 
-export async function submitAnswer(params: {
-  user_id: string;
-  question_id: string;
-  selected_option: string;
-  is_correct: boolean;
-  time_taken: number;
-}): Promise<NextQuestionResponse> {
-  const res = await authFetch(`${BASE_URL}/api/questions/${params.question_id}/submit`, {
+export async function submitAnswer(
+  questionId: string,
+  params: {
+    user_id: string;
+    selected_options: any;
+    is_correct: boolean;
+    time_taken: number;
+  }): Promise<NextQuestionResponse> {
+  const res = await authFetch(`${BASE_URL}/api/questions/${questionId}/submit`, {
     method: "POST",
     body: JSON.stringify(params),
   });
