@@ -9,6 +9,7 @@ import {
   Play,
   Pause,
   RotateCcw,
+  Loader,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import QuestionDisplay from "../../components/question/QuestionDisplay";
@@ -175,7 +176,9 @@ const QuestionPage: React.FC = () => {
   // ─── Loading state ────────────────────────────────────────────
   if (loading || !displayed) {
     return (
-      <div className="flex items-center justify-center h-full">Loading…</div>
+      <div className="flex items-center justify-center h-full">
+        <Loader size={48} className="animate-spin text-gray-500" />
+      </div>
     );
   }
 

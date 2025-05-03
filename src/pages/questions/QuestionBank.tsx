@@ -10,6 +10,7 @@ import type { QuestionSummary } from "../../lib/types";
 import Button from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { questionCategories } from "../../lib/questionCategories";
+import { Loader } from "lucide-react";
 
 interface Option {
   value: string;
@@ -81,7 +82,7 @@ const QuestionBank: React.FC = () => {
   }, [debouncedTypes]);
 
   // ─── Fetch summaries ─────────────────────────────────────────────────────────
-  
+
 useEffect(() => {
   let isCurrent = true;             // ← guard for stale requests
   setLoading(true);
@@ -213,7 +214,9 @@ useEffect(() => {
 
       {/* Question List */}
       {loading ? (
-        <div>Loading...</div>
+        <div className="flex items-center justify-center h-full">
+          <Loader size={48} className="animate-spin text-gray-500" />
+        </div>
       ) : (
         <ul className="divide-y">
           {questions.map((q) => (

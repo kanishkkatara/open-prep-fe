@@ -7,6 +7,7 @@ import {
   updateNotificationSettings,
 } from "../../lib/api";
 import { BasicSettings, NotificationSettings } from "../../lib/types";
+import { Loader } from "lucide-react";
 
 export default function SettingsPage() {
   const [basic, setBasic] = useState<BasicSettings>({
@@ -56,7 +57,11 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="text-center py-10 text-gray-500">Loading settings...</div>;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader size={48} className="animate-spin text-gray-500" />
+      </div>
+    );
   }
 
   return (
