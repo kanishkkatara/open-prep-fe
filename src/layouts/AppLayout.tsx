@@ -1,6 +1,12 @@
 // src/layouts/AppLayout.tsx
 import React, { useState, useRef, useEffect } from "react";
-import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
+import {
+  Outlet,
+  NavLink,
+  useNavigate,
+  useLocation,
+  matchPath,
+} from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -16,13 +22,14 @@ import {
   GraduationCap as Graduate,
   Trash2,
   Play,
+  Bot,
 } from "lucide-react";
 import { useUser } from "../context/UserContext";
 import { AITutorProvider, useAITutor } from "../context/AITutorContext";
 import Button from "../components/ui/Button";
 import ChatSidebar from "../components/chat/ChatSidebar";
 
-// Configuration for navigation links, with optional subtitles
+// Navigation items
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
@@ -30,53 +37,78 @@ interface NavItemProps {
   comingSoon?: boolean;
   subtitle?: string;
 }
+
 const navLinks: NavItemProps[] = [
-  { icon: <LayoutDashboard />, label: "Dashboard", path: "/app/dashboard", subtitle: "Your performance at a glance" },
+  {
+    icon: <LayoutDashboard />,
+    label: "Dashboard",
+    path: "/app/dashboard",
+    subtitle: "Your performance at a glance",
+  },
   { icon: <BookOpen />, label: "Question Bank", path: "/app/questions" },
   { icon: <School />, label: "Practice Tests", comingSoon: true },
   { icon: <BarChart2 />, label: "Analytics", comingSoon: true },
   { icon: <Calculator />, label: "Study Plan", comingSoon: true },
 ];
+
 const secondaryLinks: NavItemProps[] = [
   { icon: <Settings />, label: "Settings", path: "/app/settings" },
-  { icon: <HelpCircle />, label: "Resources", subtitle: "Here are some of the top GMAT prep resources to guide your study journey:", path: "/app/resources" },
+  {
+    icon: <HelpCircle />,
+    label: "Resources",
+    subtitle:
+      "Here are some of the top GMAT prep resources to guide your study journey:",
+    path: "/app/resources",
+  },
 ];
 
-// Provider wrapper
 const AppLayout: React.FC = () => (
   <AITutorProvider>
     <AppLayoutContent />
   </AITutorProvider>
 );
 
-// Main layout content
 const AppLayoutContent: React.FC = () => {
   const { user, logout } = useUser();
   const { clearMessages } = useAITutor();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Combine nav for lookup
+  // Figure out current page nav item
   const allNav = [...navLinks, ...secondaryLinks];
-  const currentNav = allNav.find(item => item.path === location.pathname);
+  const currentNav = allNav.find((item) => item.path === location.pathname);
   const title = currentNav?.label;
-
-  // Dynamic subtitle: override for dashboard with user name
   let subtitle = currentNav?.subtitle;
   if (location.pathname === "/app/dashboard" && user) {
     subtitle = `Welcome back, ${user.name}! Here’s your study progress.`;
   }
 
-  // Sidebar & chat toggles
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatOpen, setChatOpen] = useState(true);
+  // Determine if we're on an individual question detail page
+  const isQuestionPage = Boolean(
+    matchPath({ path: "/app/questions/:id", end: true }, location.pathname)
+  );
+
+  // Sidebar/chat state with routing-based defaults
+  const [sidebarOpen, setSidebarOpen] = useState(!isQuestionPage);
+  const [chatOpen, setChatOpen] = useState(isQuestionPage);
   const [leftPct, setLeftPct] = useState(18);
   const [rightPct, setRightPct] = useState(30);
+
+  // Whenever the route changes, reset to defaults
+  useEffect(() => {
+    if (isQuestionPage) {
+      setSidebarOpen(false);
+      setChatOpen(true);
+    } else {
+      setSidebarOpen(true);
+      setChatOpen(false);
+    }
+  }, [isQuestionPage]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef<"left" | "right" | null>(null);
 
-  // Drag-to-resize logic
+  // Drag‐to‐resize logic
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (!draggingRef.current || !containerRef.current) return;
@@ -91,9 +123,8 @@ const AppLayoutContent: React.FC = () => {
         setRightPct(Math.max(10, Math.min(pct, max)));
       }
     };
-    const onMouseUp = () => {
-      draggingRef.current = null;
-    };
+    const onMouseUp = () => (draggingRef.current = null);
+
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
     return () => {
@@ -109,17 +140,65 @@ const AppLayoutContent: React.FC = () => {
 
   return (
     <div ref={containerRef} className="flex h-screen bg-gray-50 relative">
-      {/* Sidebar toggle */}
+      {/* Mini-sidebar when collapsed */}
       {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="absolute top-4 left-4 p-2 bg-white rounded shadow z-20"
+        <aside
+          className="flex-shrink-0 flex flex-col items-center bg-white border-r overflow-hidden transition-width duration-200 z-10"
+          style={{ width: "4rem" }}
         >
-          <ChevronRight size={20} />
-        </button>
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="mt-4 mb-6 p-1 hover:bg-gray-100 rounded"
+            aria-label="Open sidebar"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <nav className="flex-1 flex flex-col items-center space-y-4">
+            {navLinks.map(({ icon, path, comingSoon, label }, idx) =>
+              comingSoon ? (
+                <button
+                  key={idx}
+                  disabled
+                  className="p-2 text-gray-300 cursor-not-allowed rounded"
+                  title={`${label} (coming soon)`}
+                >
+                  {icon}
+                </button>
+              ) : (
+                <NavLink
+                  key={idx}
+                  to={path!}
+                  className={({ isActive }) =>
+                    `p-2 rounded hover:bg-gray-100 ${
+                      isActive ? "text-blue-600" : "text-gray-600"
+                    }`
+                  }
+                  aria-label={label}
+                >
+                  {icon}
+                </NavLink>
+              )
+            )}
+            <hr className="w-8 border-gray-200 my-4" />
+            {secondaryLinks.map(({ icon, path, label }, idx) => (
+              <NavLink
+                key={idx}
+                to={path!}
+                className={({ isActive }) =>
+                  `p-2 rounded hover:bg-gray-100 ${
+                    isActive ? "text-blue-600" : "text-gray-600"
+                  }`
+                }
+                aria-label={label}
+              >
+                {icon}
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
       )}
 
-      {/* Left Sidebar */}
+      {/* Full sidebar when expanded */}
       {sidebarOpen && (
         <aside
           className="flex-shrink-0 flex flex-col bg-white border-r overflow-auto"
@@ -148,7 +227,9 @@ const AppLayoutContent: React.FC = () => {
                   to={path!}
                   className={({ isActive }) =>
                     `flex items-center px-4 py-2 rounded-lg transition-colors ${
-                      isActive ? "bg-blue-100 text-blue-800" : "text-gray-700 hover:bg-gray-100"
+                      isActive
+                        ? "bg-blue-100 text-blue-800"
+                        : "text-gray-700 hover:bg-gray-100"
                     }`
                   }
                 >
@@ -164,7 +245,9 @@ const AppLayoutContent: React.FC = () => {
                 to={path!}
                 className={({ isActive }) =>
                   `flex items-center px-4 py-2 rounded-lg transition-colors ${
-                    isActive ? "bg-blue-100 text-blue-800" : "text-gray-700 hover:bg-gray-100"
+                    isActive
+                      ? "bg-blue-100 text-blue-800"
+                      : "text-gray-700 hover:bg-gray-100"
                   }`
                 }
               >
@@ -195,7 +278,7 @@ const AppLayoutContent: React.FC = () => {
         </aside>
       )}
 
-      {/* Left Resizer */}
+      {/* Left resizer */}
       {sidebarOpen && (
         <div
           className="cursor-col-resize hover:bg-gray-200"
@@ -204,32 +287,31 @@ const AppLayoutContent: React.FC = () => {
         />
       )}
 
-      {/* Main Content + Header with optional subtitle */}
+      {/* Main content + header */}
       <main className="flex-1 flex flex-col h-screen overflow-auto">
-      {title && (
-        <header className="flex items-center justify-between bg-gray-50 text-gray-900 px-8 py-5">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-            {subtitle && <p className="mt-1 text-gray-600">{subtitle}</p>}
-          </div>
-          {location.pathname === "/app/dashboard" && (
-            <Button
-              leftIcon={<Play size={18} />}
-              onClick={() => navigate("/app/questions")}
-              className="whitespace-nowrap"
-            >
-              Resume Learning
-            </Button>
-          )}
-        </header>
-      )}
-        {/* Removed extra padding here */}
+        {title && (
+          <header className="flex items-center justify-between bg-gray-50 text-gray-900 px-8 py-5">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
+              {subtitle && <p className="mt-1 text-gray-600">{subtitle}</p>}
+            </div>
+            {location.pathname === "/app/dashboard" && (
+              <Button
+                leftIcon={<Play size={18} />}
+                onClick={() => navigate("/app/questions")}
+                className="whitespace-nowrap"
+              >
+                Resume Learning
+              </Button>
+            )}
+          </header>
+        )}
         <div className="flex-1 overflow-auto">
           <Outlet />
         </div>
       </main>
 
-      {/* Right Resizer */}
+      {/* Right resizer */}
       {chatOpen && (
         <div
           className="cursor-col-resize hover:bg-gray-200"
@@ -238,17 +320,18 @@ const AppLayoutContent: React.FC = () => {
         />
       )}
 
-      {/* Chat Toggle */}
+      {/* Chat toggle when closed */}
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
           className="absolute top-4 right-4 p-2 bg-white rounded shadow z-20"
+          aria-label="Open AI Tutor"
         >
-          <ChevronLeft size={20} />
+          <Bot size={24} />
         </button>
       )}
 
-      {/* Chat Sidebar */}
+      {/* Chat sidebar when open */}
       {chatOpen && (
         <aside
           className="flex-shrink-0 flex flex-col bg-white border-l"
@@ -264,7 +347,11 @@ const AppLayoutContent: React.FC = () => {
               >
                 <Trash2 size={18} />
               </button>
-              <button onClick={() => setChatOpen(false)} className="p-1">
+              <button
+                onClick={() => setChatOpen(false)}
+                className="p-1"
+                title="Close AI Tutor"
+              >
                 <ChevronRight size={20} />
               </button>
             </div>

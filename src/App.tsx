@@ -1,6 +1,8 @@
+// src/App.tsx
+import React, { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { Toaster } from "react-hot-toast";
 
 import AuthLayout from "./layouts/AuthLayout";
 import AppLayout from "./layouts/AppLayout";
@@ -11,22 +13,20 @@ import OnboardingChat from "./pages/onboarding/OnboardingChat";
 import Dashboard from "./pages/dashboard/Dashboard";
 import QuestionBank from "./pages/questions/QuestionBank";
 import QuestionPage from "./pages/questions/QuestionPage";
+import QuestionCreator from "./pages/questions/QuestionCreation";
+import SettingsPage from "./pages/settings/SettingsPage";
+import ResourcesPage from "./pages/resources/ResourcesPage";
 
 import { UserProvider } from "./context/UserContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LoadingScreen from "./components/ui/LoadingScreen";
-import SettingsPage from "./pages/settings/SettingsPage";
-import ResourcesPage from "./pages/resources/ResourcesPage";
-import QuestionCreator from "./pages/questions/QuestionCreation";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Simulate app initialization
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    const timer = setTimeout(() => setIsLoading(false), 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -42,22 +42,30 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={googleClientId || ""}>
       <UserProvider>
+        {/* <Toaster> must be mounted inside your React tree */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: { zIndex: 9999, pointerEvents: "auto" },
+          }}
+        />
+
         <Routes>
           <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
-          {/* Auth Routes */}
+          {/* Auth */}
           <Route path="/auth" element={<AuthLayout />}>
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
           </Route>
 
-          {/* Onboarding Routes */}
+          {/* Onboarding – user must be logged in but not onboarded */}
           <Route path="/onboarding" element={<ProtectedRoute />}>
             <Route path="welcome" element={<OnboardingWelcome />} />
             <Route path="chat" element={<OnboardingChat />} />
           </Route>
 
-          {/* App Routes */}
+          {/* Main App – user must be onboarded */}
           <Route
             path="/app"
             element={
@@ -67,23 +75,10 @@ function App() {
             }
           >
             <Route path="dashboard" element={<Dashboard />} />
-
-            {/* Question Bank (list) */}
             <Route path="questions" element={<QuestionBank />} />
-            {/* Question Detail */}
-            <Route path="questions/:id" element={<QuestionPage />} />
-            {/* Question Creation */}
             <Route path="questions/create" element={<QuestionCreator />} />
-            {/* Settings */}
-            <Route
-              path="settings"
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              }
-            />
-            {/* Resources */}
+            <Route path="questions/:id" element={<QuestionPage />} />
+            <Route path="settings" element={<SettingsPage />} />
             <Route path="resources" element={<ResourcesPage />} />
           </Route>
         </Routes>

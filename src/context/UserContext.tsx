@@ -87,7 +87,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     if (token && !user) {
-      fetchCurrentUser(token)
+      fetchCurrentUser()
         .then((u) => {
           const mapped = mapServerUserToProfile(u);
           setUser(mapped);
@@ -121,9 +121,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
     localStorage.removeItem("token");
   };
 
+// in UserContext.tsx
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!user || !token) return;
-    await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/me`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -131,9 +132,14 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
       },
       body: JSON.stringify(data),
     });
-    const updated = { ...user, ...data };
-    setUser(updated);
-    localStorage.setItem("user", JSON.stringify(updated));
+    if (!res.ok) {
+      throw new Error(`Update failed: ${res.status}`);
+    }
+    // assume the server returns the updated user
+    const serverUser = await res.json();
+    const mapped = mapServerUserToProfile(serverUser);
+    setUser(mapped);
+    localStorage.setItem("user", JSON.stringify(mapped));
   };
 
   const completeOnboarding = async () => {
@@ -146,7 +152,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({
     setToken(access_token);
     localStorage.setItem("token", access_token);
 
-    const serverUser = await fetchCurrentUser(access_token);
+    const serverUser = await fetchCurrentUser();
     const mapped = mapServerUserToProfile(serverUser);
     setUser(mapped);
     localStorage.setItem("user", JSON.stringify(mapped));

@@ -8,6 +8,7 @@ import ChatInput from "../../components/chat/ChatInput";
 import TypingIndicator from "../../components/chat/TypingIndicator";
 import Button from "../../components/ui/Button";
 import { sendChatMessage } from "../../lib/api";
+import toast from "react-hot-toast";
 
 interface Message {
   id: string;
@@ -107,9 +108,14 @@ const OnboardingChat: React.FC = () => {
     }
   };
 
-  const handleComplete = () => {
-    completeOnboarding();
-    navigate("/app/dashboard");
+  const handleComplete = async () => {
+    try {
+      await completeOnboarding();
+      navigate("/app/dashboard");
+    } catch (err) {
+      console.error("Could not complete onboarding:", err);
+      toast.error("Oops! Could not complete onboarding. Please try again.");
+    }
   };
 
   return (
