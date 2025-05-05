@@ -277,17 +277,25 @@ const QuestionPage: React.FC = () => {
             {!submitted ? (
               <Button
                 onClick={onSubmit}
-                disabled={
-                  displayed.content.some((b) => b.type === "dropdown")
-                    ? displayed.content.some(
-                        (b, i) => b.type === "dropdown" && dropdownValues[i] == null
-                      )
-                    : displayed.type === "two-part-analysis"
-                    ? selGrid.length !== (
-                        (displayed.content.find(b => b.type === "ds_grid")?.col_headers?.length ?? 0)
-                      )
-                    : !selAns
-                }
+                disabled={(() => {
+                  // 1) Any dropdown: disable if _any_ dropdown is still null
+                  if (displayed.content.some(b => b.type === "dropdown")) {
+                    return displayed.content.some((b, i) =>
+                      b.type === "dropdown" && dropdownValues[i] == null
+                    );
+                  }
+              
+                  // 2) Any ds_grid: disable until one pick per column
+                  if (displayed.content.some(b => b.type === "ds_grid")) {
+                    const colCount =
+                      (displayed.content.find(b => b.type === "ds_grid") as any)
+                        .col_headers?.length ?? 0;
+                    return selGrid.length !== colCount;
+                  }
+              
+                  // 3) Otherwise (MCQ): disable if no answer selected
+                  return !selAns;
+                })()}
                 
                 leftIcon={<ChevronRight size={16} />}
               >

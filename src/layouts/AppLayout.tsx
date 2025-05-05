@@ -299,7 +299,7 @@ const AppLayoutContent: React.FC = () => {
               <Button
                 leftIcon={<Play size={18} />}
                 onClick={() => navigate("/app/questions")}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap mr-8"
               >
                 Resume Learning
               </Button>
