@@ -162,3 +162,11 @@ export type QuestionResponse = SingleQuestion | CompositeQuestion;
 export interface NextQuestionResponse {
   next_question_id: string | null;
 }
+
+export interface Plan {
+  id: number;
+  name: string;
+  price_cents: number;
+  strike_price_cents: number;
+  billing_interval: 'month' | 'semiannual' | 'annual';
+}

@@ -264,3 +264,37 @@ export async function updateQuestionIsDeleted(
   }
   return res.json();
 }
+
+/** New: fetch the full raw question JSON for editing */
+export async function fetchQuestionRaw(
+  questionId: string
+): Promise<Record<string, any>> {
+  const res = await authFetch(
+    `${BASE_URL}/api/questions/update/${questionId}`
+  );
+  if (!res.ok)
+    throw new Error(
+      `Failed to fetch raw question: ${res.status} ${res.statusText}`
+    );
+  return res.json();
+}
+
+/** New: send the edited raw question JSON back to the server */
+export async function updateQuestionRaw(
+  questionId: string,
+  payload: Record<string, any>
+): Promise<Record<string, any>> {
+  const res = await authFetch(
+    `${BASE_URL}/api/questions/update/${questionId}`,
+    {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    }
+  );
+  if (!res.ok)
+    throw new Error(
+      `Failed to update question: ${res.status} ${res.statusText}`
+    );
+  return res.json();
+}

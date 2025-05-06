@@ -13,13 +13,15 @@ import OnboardingChat from "./pages/onboarding/OnboardingChat";
 import Dashboard from "./pages/dashboard/Dashboard";
 import QuestionBank from "./pages/questions/QuestionBank";
 import QuestionPage from "./pages/questions/QuestionPage";
-import QuestionCreator from "./pages/questions/QuestionCreation";
+import EditAndPreviewQuestionPage from "./pages/questions/QuestionUpdate";
 import SettingsPage from "./pages/settings/SettingsPage";
 import ResourcesPage from "./pages/resources/ResourcesPage";
 
 import { UserProvider } from "./context/UserContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import LoadingScreen from "./components/ui/LoadingScreen";
+import CheckoutForm from "./pages/payment/CheckoutForm";
+import PricingPage from "./pages/payment/Pricing";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -76,10 +78,12 @@ function App() {
           >
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="questions" element={<QuestionBank />} />
-            <Route path="questions/create" element={<QuestionCreator />} />
+            <Route path="questions/update" element={<EditAndPreviewQuestionPage />} />
             <Route path="questions/:id" element={<QuestionPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="resources" element={<ResourcesPage />} />
+            <Route path="pricing" element={<PricingPage />} />
+            <Route path="checkout" element={<CheckoutForm />} />
           </Route>
         </Routes>
       </UserProvider>
