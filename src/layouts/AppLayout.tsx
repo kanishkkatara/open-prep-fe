@@ -98,7 +98,7 @@ const AppLayoutContent: React.FC = () => {
   useEffect(() => {
     if (isQuestionPage) {
       setSidebarOpen(false);
-      setChatOpen(true);
+      setChatOpen(false); // TODO: change it to true
     } else {
       setSidebarOpen(true);
       setChatOpen(false);
@@ -299,7 +299,7 @@ const AppLayoutContent: React.FC = () => {
               <Button
                 leftIcon={<Play size={18} />}
                 onClick={() => navigate("/app/questions")}
-                className="whitespace-nowrap mr-8"
+                className="whitespace-nowrap"
               >
                 Resume Learning
               </Button>
@@ -324,10 +324,10 @@ const AppLayoutContent: React.FC = () => {
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
-          className="absolute top-4 right-4 p-2 bg-white rounded shadow z-20"
+          className="fixed bottom-4 right-4 p-2 bg-white rounded shadow z-20"
           aria-label="Open AI Tutor"
         >
-          <Bot size={24} />
+          <Bot size={28} />
         </button>
       )}
 
