@@ -74,6 +74,26 @@ const QuestionPage: React.FC = () => {
       : question;
   }, [question]);
 
+  // ─── Shared states for content types ───────────────────────────
+  const hasDropdowns = useMemo(
+    () => displayed?.content.some((b) => b.type === "dropdown") ?? false,
+    [displayed]
+  );
+  const hasGrid = useMemo(
+    () => displayed?.content.some((b) => b.type === "ds_grid") ?? false,
+    [displayed]
+  );
+  const gridColCount = useMemo(
+    () =>
+      displayed?.content.find((b) => b.type === "ds_grid")?.col_headers
+        ?.length ?? 0,
+    [displayed]
+  );
+  const isMCQ = useMemo(
+    () => displayed && !hasDropdowns && !hasGrid,
+    [displayed, hasDropdowns, hasGrid]
+  );
+
   // ─── Reset state when question changes ──────────────────────────
   useEffect(() => {
     setSelAns(null);
@@ -86,7 +106,6 @@ const QuestionPage: React.FC = () => {
     setExplanationRequested(false);
 
     if (displayed) {
-      // one slot per content block for inline blanks
       setDropdownValues(Array(displayed.content.length).fill(null));
       setScreenContext({ id: question!.id, parent_id: question!.parent?.id });
     }
@@ -130,17 +149,17 @@ const QuestionPage: React.FC = () => {
 
     const payload: any = {
       user_id: user.id,
-      is_correct: false,
       time_taken: time,
     };
 
-    // inline-dropdown questions
-    const hasDropdowns = displayed.content.some((b) => b.type === "dropdown");
+    let is_correct = false;
+
     if (hasDropdowns) {
       const missing = displayed.content.some(
         (b, i) => b.type === "dropdown" && dropdownValues[i] == null
       );
       if (missing) return;
+
       payload.selected_options = displayed.content.reduce<number[]>(
         (acc, b, i) => {
           if (b.type === "dropdown") acc.push(dropdownValues[i]!);
@@ -148,19 +167,28 @@ const QuestionPage: React.FC = () => {
         },
         []
       );
-    }
-    // two-part grid
-    else if (displayed.type === "two-part-analysis") {
-      const colCount = displayed.content.find(b => b.type === "ds_grid")?.col_headers?.length ?? 0;
-      if (selGrid.length !== colCount) return;
+
+      is_correct =
+        JSON.stringify(payload.selected_options) ===
+        JSON.stringify(displayed.answers.selected_pairs);
+    } else if (hasGrid) {
+      if (selGrid.length !== gridColCount) return;
+
       payload.selected_options = selGrid;
-    }
-    
-    // standard MCQ
-    else {
+
+      is_correct =
+        JSON.stringify(payload.selected_options) ===
+        JSON.stringify(displayed.answers.selected_pairs);
+    } else if (isMCQ) {
       if (!selAns) return;
+
       payload.selected_options = selAns;
+
+      is_correct =
+        payload.selected_options === displayed.answers.correct_option_id;
     }
+
+    payload.is_correct = is_correct;
 
     try {
       const resp = await submitAnswer(displayed.id, payload);
@@ -197,7 +225,6 @@ const QuestionPage: React.FC = () => {
     await sendMessage("Please explain this question.");
   };
 
-  // ─── Loading ───────────────────────────────────────────────────
   if (loading || !displayed) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -206,7 +233,6 @@ const QuestionPage: React.FC = () => {
     );
   }
 
-  // ─── Meta info ─────────────────────────────────────────────────
   const mm = Math.floor(time / 60);
   const ss = (time % 60).toString().padStart(2, "0");
   const isComposite = question?.parent !== null;
@@ -215,7 +241,6 @@ const QuestionPage: React.FC = () => {
   const metaDifficulty = meta.difficulty;
   const metaTags = meta.tags.join(", ");
 
-  // ─── Render ───────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
       <div className="bg-white p-4 border-b flex justify-between items-center">
@@ -245,7 +270,9 @@ const QuestionPage: React.FC = () => {
           <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full capitalize">
             {metaType}
           </span>
-          <span className="text-sm text-gray-600">Difficulty: {metaDifficulty}</span>
+          <span className="text-sm text-gray-600">
+            Difficulty: {metaDifficulty}
+          </span>
           <span className="text-sm text-gray-600">Tags: {metaTags}</span>
         </div>
 
@@ -253,13 +280,13 @@ const QuestionPage: React.FC = () => {
           "parent" in question &&
           question?.parent?.content &&
           question.parent.content.length > 0 && (
-          <div className="px-6">
-            <PassageDisplay
-              blocks={question.parent.content}
-              questionType={question.parent.type}
-            />
-          </div>
-        )}
+            <div className="px-6">
+              <PassageDisplay
+                blocks={question.parent.content}
+                questionType={question.parent.type}
+              />
+            </div>
+          )}
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <QuestionDisplay
@@ -278,25 +305,17 @@ const QuestionPage: React.FC = () => {
               <Button
                 onClick={onSubmit}
                 disabled={(() => {
-                  // 1) Any dropdown: disable if _any_ dropdown is still null
-                  if (displayed.content.some(b => b.type === "dropdown")) {
-                    return displayed.content.some((b, i) =>
-                      b.type === "dropdown" && dropdownValues[i] == null
+                  if (hasDropdowns) {
+                    return displayed.content.some(
+                      (b, i) =>
+                        b.type === "dropdown" && dropdownValues[i] == null
                     );
                   }
-              
-                  // 2) Any ds_grid: disable until one pick per column
-                  if (displayed.content.some(b => b.type === "ds_grid")) {
-                    const colCount =
-                      (displayed.content.find(b => b.type === "ds_grid") as any)
-                        .col_headers?.length ?? 0;
-                    return selGrid.length !== colCount;
+                  if (hasGrid) {
+                    return selGrid.length !== gridColCount;
                   }
-              
-                  // 3) Otherwise (MCQ): disable if no answer selected
                   return !selAns;
                 })()}
-                
                 leftIcon={<ChevronRight size={16} />}
               >
                 Submit Answer
