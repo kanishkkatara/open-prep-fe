@@ -128,6 +128,13 @@ export interface AnswerSchema {
   selected_pairs?: CellCoordinate[];
   clicked_hotspot_id?: string;
 }
+export type Annotation = {
+  annotationType: "bold" | "highlight";
+  blockIndex:     number;
+  charStart:      number;
+  charEnd:        number;
+  metadata?:      Record<string, any>;
+};
 
 export interface BaseQuestion {
   id: string;
@@ -140,6 +147,7 @@ export interface BaseQuestion {
   order?: number | null;
   parent: BaseQuestion | null;
   is_deleted: boolean;
+  extras: { annotations?: Annotation[]; [key:string]: any };
 }
 
 export interface SingleQuestion extends BaseQuestion {

@@ -25,6 +25,7 @@ import type {
   QuestionResponse,
   SingleQuestion,
   CellCoordinate,
+  Annotation,
 } from "../../lib/types";
 
 const QuestionPage: React.FC = () => {
@@ -233,6 +234,8 @@ const QuestionPage: React.FC = () => {
     );
   }
 
+  const annotations = (displayed.extras?.annotations as Annotation[]) || [];
+
   const mm = Math.floor(time / 60);
   const ss = (time % 60).toString().padStart(2, "0");
   const isComposite = question?.parent !== null;
@@ -284,6 +287,7 @@ const QuestionPage: React.FC = () => {
               <PassageDisplay
                 blocks={question.parent.content}
                 questionType={question.parent.type}
+                annotations={annotations}
               />
             </div>
           )}
