@@ -36,11 +36,9 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({
   // ─── Render each block, applying annotations for paragraphs ───
   const renderBlock = (blk: ContentBlock, blockIndex: number) => {
     if (blk.type === "paragraph") {
-      console.log("annotations", annotations);
       const spans = annotations
         .filter((a) => a.blockIndex === blockIndex)
         .sort((a, b) => a.charStart - b.charStart);
-      console.log("spans", spans);
       if (!spans.length) {
         return (
           <p key={blockIndex} className="text-gray-800 mb-4 whitespace-pre-line">
@@ -56,7 +54,6 @@ const PassageDisplay: React.FC<PassageDisplayProps> = ({
           pieces.push(blk.text.slice(cursor, a.charStart));
         }
         const slice = blk.text.slice(a.charStart, a.charEnd);
-        console.log("slice", slice);
         pieces.push(
           a.annotationType === "highlight" ? (
             <mark key={i}>{slice}</mark>

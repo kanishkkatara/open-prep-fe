@@ -1,27 +1,39 @@
+// src/components/ProtectedRoute.tsx
+
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useUser } from '../../context/UserContext';
 
-const ProtectedRoute: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+interface ProtectedRouteProps {
+  children?: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, user } = useUser();
   const location = useLocation();
-  
-  // Check if user is authenticated
+
+  // If not authenticated, redirect to login
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
-  
-  // For onboarding paths, check if user should bypass onboarding
-  if (location.pathname.startsWith('/onboarding/') && user?.isOnboarded) {
+
+  // If on an onboarding route but already onboarded, send to dashboard
+  if (
+    location.pathname.startsWith('/onboarding/') &&
+    user?.isOnboarded
+  ) {
     return <Navigate to="/app/dashboard" replace />;
   }
-  
-  // For app paths, check if user needs onboarding
-  if (location.pathname.startsWith('/app/') && !user?.isOnboarded) {
+
+  // If on an app route but not yet onboarded, send to onboarding welcome
+  if (
+    location.pathname.startsWith('/app/') &&
+    !user?.isOnboarded
+  ) {
     return <Navigate to="/onboarding/welcome" replace />;
   }
-  
-  // Return either the children or the outlet
+
+  // Otherwise render the child routes or provided children
   return children ? <>{children}</> : <Outlet />;
 };
 

@@ -85,7 +85,6 @@ const OnboardingChat: React.FC = () => {
           ];
         });
       }
-      console.log("Chat API response:", res.onboarding_complete);
       if (res.onboarding_complete) {
         setShowCompletionCard(true);
         setProgress(100);

@@ -172,9 +172,26 @@ export interface NextQuestionResponse {
 }
 
 export interface Plan {
-  id: number;
+  id: string;
   name: string;
   price_cents: number;
   strike_price_cents: number;
-  billing_interval: 'month' | 'semiannual' | 'annual';
+  billing_interval: "month"|"semiannual"|"annual";
+}
+
+export interface Subscription {
+  id: string;
+  user_id: string;
+  plan_id: string | null;
+  status: string;            // e.g. "trialing", "active"
+  current_period_end: string; // ISO date
+}
+
+export interface PaymentOrder {
+  id: string;
+  subscription_id: string | null;
+  gateway_order_id: string;
+  amount_cents: number;
+  currency: string;
+  status: string; // e.g. "created"
 }

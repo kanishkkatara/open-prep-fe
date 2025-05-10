@@ -8,27 +8,35 @@ import {
   Question,
   QuestionResponse,
   QuestionSummary,
+  // new types for subscriptions
+  Plan,
+  Subscription,
+  PaymentOrder,
 } from "./types";
 
 const BASE_URL = import.meta.env.VITE_API_URL as string;
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Grab the current access token */
 function getAccessToken() {
   return localStorage.getItem("access_token");
 }
-/** Grab the refresh token */
+
 function getRefreshToken() {
   return localStorage.getItem("refresh_token");
 }
-/** Save new tokens */
-function saveTokens({ access_token, refresh_token }: { access_token: string; refresh_token?: string }) {
+
+function saveTokens({
+  access_token,
+  refresh_token,
+}: {
+  access_token: string;
+  refresh_token?: string;
+}) {
   localStorage.setItem("access_token", access_token);
   if (refresh_token) localStorage.setItem("refresh_token", refresh_token);
 }
 
-/** Build headers with JSON + Bearer */
 function getAuthHeaders() {
   const token = getAccessToken();
   return {
@@ -37,25 +45,21 @@ function getAuthHeaders() {
   };
 }
 
-/**
- * Universal fetch wrapper that:
- *  1️⃣ Injects Bearer header
- *  2️⃣ On 401: attempts /users/refresh using refresh_token
- *  3️⃣ Retries original request once if refresh succeeds
- *  4️⃣ Otherwise clears tokens + redirects to login
- */
-async function authFetch(input: RequestInfo, init: RequestInit = {}, isRetry = false): Promise<Response> {
+async function authFetch(
+  input: RequestInfo,
+  init: RequestInit = {},
+  isRetry = false
+): Promise<Response> {
   const res = await fetch(input, {
     ...init,
     headers: { ...(init.headers || {}), ...getAuthHeaders() },
-    credentials: init.credentials, // preserve if using cookies
+    credentials: init.credentials,
   });
 
   if (res.status !== 401) {
     return res;
   }
 
-  // if already retried once, give up
   if (isRetry) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -63,7 +67,6 @@ async function authFetch(input: RequestInfo, init: RequestInit = {}, isRetry = f
     throw new Error("Session expired");
   }
 
-  // attempt token refresh
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
     localStorage.removeItem("access_token");
@@ -78,23 +81,23 @@ async function authFetch(input: RequestInfo, init: RequestInit = {}, isRetry = f
   });
 
   if (!refreshRes.ok) {
-    // refresh failed → logout
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     window.location.href = "/auth/login";
     throw new Error("Refresh failed");
   }
 
-  const newTokens = await refreshRes.json() as { access_token: string; refresh_token?: string };
+  const newTokens = (await refreshRes.json()) as {
+    access_token: string;
+    refresh_token?: string;
+  };
   saveTokens(newTokens);
 
-  // retry original request with new token
-  return authFetch(input, init, /* isRetry: */ true);
+  return authFetch(input, init, true);
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────────
 
-/** Login via Google; server must return {access_token, refresh_token} */
 export async function loginWithGoogle(id_token: string) {
   const res = await fetch(`${BASE_URL}/api/users/login`, {
     method: "POST",
@@ -102,7 +105,10 @@ export async function loginWithGoogle(id_token: string) {
     body: JSON.stringify({ id_token }),
   });
   if (!res.ok) throw new Error(`Login failed: ${await res.text()}`);
-  const data = await res.json() as { access_token: string; refresh_token: string };
+  const data = (await res.json()) as {
+    access_token: string;
+    refresh_token: string;
+  };
   saveTokens(data);
   return data;
 }
@@ -144,11 +150,15 @@ export async function submitAnswer(
     selected_options: any;
     is_correct: boolean;
     time_taken: number;
-  }): Promise<NextQuestionResponse> {
-  const res = await authFetch(`${BASE_URL}/api/questions/${questionId}/submit`, {
-    method: "POST",
-    body: JSON.stringify(params),
-  });
+  }
+): Promise<NextQuestionResponse> {
+  const res = await authFetch(
+    `${BASE_URL}/api/questions/${questionId}/submit`,
+    {
+      method: "POST",
+      body: JSON.stringify(params),
+    }
+  );
 
   if (!res.ok) throw new Error("Failed to submit answer");
   return res.json();
@@ -170,7 +180,7 @@ export async function fetchQuestionSummaries(params: {
     maxDifficulty,
     page = 1,
     pageSize = 20,
-    progress_filter
+    progress_filter,
   } = params;
 
   const skip = (page - 1) * pageSize;
@@ -182,7 +192,6 @@ export async function fetchQuestionSummaries(params: {
   if (maxDifficulty != null) qs.set("maxDifficulty", String(maxDifficulty));
   qs.set("skip", skip.toString());
   qs.set("limit", pageSize.toString());
-
   if (progress_filter) qs.set("progress_filter", progress_filter);
 
   const res = await authFetch(`${BASE_URL}/api/questions?${qs}`);
@@ -191,18 +200,14 @@ export async function fetchQuestionSummaries(params: {
   return res.json();
 }
 
-
 export async function fetchQuestionById(
   questionId: string
 ): Promise<QuestionResponse> {
   const url = new URL(`${BASE_URL}/api/questions/${questionId}`);
-
   const res = await authFetch(url.toString());
-
   if (!res.ok) throw new Error(`Failed to fetch question ${questionId}`);
   return res.json();
 }
-
 
 export async function getDashboard(): Promise<DashboardData> {
   const res = await authFetch(`${BASE_URL}/api/dashboard`);
@@ -218,7 +223,9 @@ export async function getBasicSettings(): Promise<BasicSettings> {
   return res.json();
 }
 
-export async function updateBasicSettings(settings: BasicSettings): Promise<BasicSettings> {
+export async function updateBasicSettings(
+  settings: BasicSettings
+): Promise<BasicSettings> {
   const res = await authFetch(`${BASE_URL}/api/settings/basic`, {
     method: "PUT",
     credentials: "include",
@@ -265,7 +272,6 @@ export async function updateQuestionIsDeleted(
   return res.json();
 }
 
-/** New: fetch the full raw question JSON for editing */
 export async function fetchQuestionRaw(
   questionId: string
 ): Promise<Record<string, any>> {
@@ -279,7 +285,6 @@ export async function fetchQuestionRaw(
   return res.json();
 }
 
-/** New: send the edited raw question JSON back to the server */
 export async function updateQuestionRaw(
   questionId: string,
   payload: Record<string, any>
@@ -296,5 +301,54 @@ export async function updateQuestionRaw(
     throw new Error(
       `Failed to update question: ${res.status} ${res.statusText}`
     );
+  return res.json();
+}
+
+// ─── New Subscription & Payment APIs ────────────────────────────────────────
+
+/**
+ * Fetch available pricing plans.
+ */
+export async function fetchPlans(): Promise<Plan[]> {
+  const res = await authFetch(`${BASE_URL}/api/billing/plans`);
+  if (!res.ok) throw new Error("Failed to load plans");
+  return res.json();
+}
+
+/**
+ * Start a 5-day free trial for the current user.
+ */
+export async function startFreeTrial(): Promise<Subscription> {
+  const res = await authFetch(`${BASE_URL}/api/billing/trial`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to start free trial");
+  return res.json();
+}
+
+/**
+ * Create a payment order for the chosen plan.
+ * Returns a PaymentOrder containing Razorpay order_id, amount, etc.
+ */
+export async function createOrder(
+  planId: string
+): Promise<PaymentOrder> {
+  const res = await authFetch(
+    `${BASE_URL}/api/billing/create_order`,
+    {
+      method: "POST",
+      body: JSON.stringify({ plan_id: planId }),
+    }
+  );
+  if (!res.ok) throw new Error("Failed to create payment order");
+  return res.json();
+}
+
+/**
+ * Fetch the current user’s subscription status.
+ */
+export async function fetchMySubscription(): Promise<Subscription> {
+  const res = await authFetch(`${BASE_URL}/api/billing/me`);
+  if (!res.ok) throw new Error("Failed to fetch subscription");
   return res.json();
 }
