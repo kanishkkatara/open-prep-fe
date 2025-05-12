@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Toaster } from "react-hot-toast";
@@ -25,7 +25,6 @@ import ResourcesPage from "./pages/resources/ResourcesPage";
 import PricingPage from "./pages/payment/Pricing";
 import CheckoutPage from "./pages/payment/CheckoutPage";
 
-import { UserProvider } from "./context/UserContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthenticatedRoute from "./components/auth/AuthenticatedRoute";
 import SubscriberRoute from "./components/auth/SubscriberRoute";
@@ -51,58 +50,56 @@ function App() {
 
   return (
     <GoogleOAuthProvider clientId={googleClientId || ""}>
-      <UserProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{ style: { zIndex: 9999, pointerEvents: "auto" } }}
-        />
+      <Toaster
+        position="top-right"
+        toastOptions={{ style: { zIndex: 9999, pointerEvents: "auto" } }}
+      />
 
-        <Routes>
-          {/* Root */}
-          <Route path="/" element={<Navigate to="/auth/login" replace />} />
+      <Routes>
+        {/* Root */}
+        <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
-          {/* Authentication */}
-          <Route path="/auth" element={<AuthLayout />}>
-            <Route path="login" element={<Login />} />
-            <Route path="register" element={<Register />} />
-          </Route>
+        {/* Authentication */}
+        <Route path="/auth" element={<AuthLayout />}>
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
+        </Route>
 
-          {/* Onboarding: must be logged in but not yet onboarded */}
-          <Route path="/onboarding" element={<ProtectedRoute />}>
-            <Route index element={<Navigate to="welcome" replace />} />
-            <Route path="welcome" element={<OnboardingWelcome />} />
-            <Route path="chat" element={<OnboardingChat />} />
-          </Route>
+        {/* Onboarding: must be logged in but not yet onboarded */}
+        <Route path="/onboarding" element={<ProtectedRoute />}>
+          <Route index element={<Navigate to="welcome" replace />} />
+          <Route path="welcome" element={<OnboardingWelcome />} />
+          <Route path="chat" element={<OnboardingChat />} />
+        </Route>
 
-          {/* Main App: must be logged in */}
-          <Route path="/app" element={<AuthenticatedRoute />}>
-            <Route element={<AppLayout />}>
-              {/* Public billing flows: anyone logged in */}
-              <Route path="pricing" element={<PricingPage />} />
-              <Route path="checkout" element={<CheckoutPage />} />
+        {/* Main App: must be logged in */}
+        <Route path="/app" element={<AuthenticatedRoute />}>
+          <Route element={<AppLayout />}>
+            {/* Public billing flows: anyone logged in */}
+            <Route path="pricing" element={<PricingPage />} />
+            <Route path="checkout" element={<CheckoutPage />} />
 
-              {/* Subscriber-only pages: must have active/trial subscription */}
-              <Route element={<SubscriberRoute />}>
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="questions" element={<QuestionBank />} />
-                <Route
-                  path="questions/update"
-                  element={<EditAndPreviewQuestionPage />}
-                />
-                <Route path="questions/:id" element={<QuestionPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="resources" element={<ResourcesPage />} />
-              </Route>
-
-              {/* Fallback under /app */}
-              <Route path="*" element={<Navigate to="pricing" replace />} />
+            {/* Subscriber-only pages: must have active/trial subscription */}
+            <Route element={<SubscriberRoute />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="questions" element={<QuestionBank />} />
+              <Route
+                path="questions/update"
+                element={<EditAndPreviewQuestionPage />}
+              />
+              <Route path="questions/:id" element={<QuestionPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="resources" element={<ResourcesPage />} />
             </Route>
-          </Route>
 
-          {/* Global fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </UserProvider>
+            {/* Fallback under /app */}
+            <Route path="*" element={<Navigate to="pricing" replace />} />
+          </Route>
+        </Route>
+
+        {/* Global fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </GoogleOAuthProvider>
   );
 }
