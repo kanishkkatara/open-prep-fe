@@ -26,6 +26,7 @@ const ChatSidebar: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full bg-white">
+      <div className="h-1 w-full bg-gradient-to-l from-blue-500 to-purple-500" />
 
       {/* Message List */}
       <div ref={listRef} className="flex-1 overflow-y-auto p-4 min-h-0">

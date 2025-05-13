@@ -83,34 +83,34 @@ const QuestionBank: React.FC = () => {
 
   // ─── Fetch summaries ─────────────────────────────────────────────────────────
 
-useEffect(() => {
-  let isCurrent = true;             // ← guard for stale requests
-  setLoading(true);
+  useEffect(() => {
+    let isCurrent = true; // ← guard for stale requests
+    setLoading(true);
 
-  (async () => {
-    try {
-      const data = await fetchQuestionSummaries({
-        type:    debouncedTypes.map((t) => t.value),
-        tags:    debouncedTags.map((t) => t.value),
-        minDifficulty: debouncedDifficulty[0],
-        maxDifficulty: debouncedDifficulty[1],
-        progress_filter: onlyNew ? "non-attempted" : "all",
-        page,
-        pageSize,
-      });
-      if (!isCurrent) return;      // ← ignore if a newer fetch was started
-      setQuestions(data.filter((q) => !q.parentId));
-    } catch (e) {
-      if (isCurrent) console.error(e);
-    } finally {
-      if (isCurrent) setLoading(false);
-    }
-  })();
+    (async () => {
+      try {
+        const data = await fetchQuestionSummaries({
+          type: debouncedTypes.map((t) => t.value),
+          tags: debouncedTags.map((t) => t.value),
+          minDifficulty: debouncedDifficulty[0],
+          maxDifficulty: debouncedDifficulty[1],
+          progress_filter: onlyNew ? "non-attempted" : "all",
+          page,
+          pageSize,
+        });
+        if (!isCurrent) return; // ← ignore if a newer fetch was started
+        setQuestions(data.filter((q) => !q.parentId));
+      } catch (e) {
+        if (isCurrent) console.error(e);
+      } finally {
+        if (isCurrent) setLoading(false);
+      }
+    })();
 
-  return () => {
-    isCurrent = false;             // ← mark this effect as “stale” on cleanup
-  };
-}, [debouncedTypes, debouncedTags, debouncedDifficulty, onlyNew, page]);
+    return () => {
+      isCurrent = false; // ← mark this effect as “stale” on cleanup
+    };
+  }, [debouncedTypes, debouncedTags, debouncedDifficulty, onlyNew, page]);
 
   // Reset page on filter change
   useEffect(() => {
@@ -121,12 +121,10 @@ useEffect(() => {
 
   return (
     <div className="p-6">
-
       {/* Filters */}
       <Card className="mb-6 bg-white shadow rounded-lg">
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 items-center">
-
             {/* Type */}
             <div>
               <label className="block text-sm font-medium mb-1">Type</label>
@@ -166,7 +164,7 @@ useEffect(() => {
                 htmlFor="onlyNew"
                 className="text-sm font-medium whitespace-nowrap"
               >
-                Show only new questions
+                Show only unattempted questions
               </label>
               <Switch.Root
                 id="onlyNew"
@@ -181,7 +179,7 @@ useEffect(() => {
             {/* Difficulty slider */}
             <div>
               <label className="block text-sm font-medium mb-1">
-                Difficulty: {difficultyRange[0]} – {difficultyRange[1]}
+                Difficulty
               </label>
               <Slider.Root
                 className="relative flex items-center h-6 select-none w-full"
@@ -203,9 +201,8 @@ useEffect(() => {
                 ))}
               </Slider.Root>
               <div className="flex justify-between text-xs text-gray-500 mt-1">
-                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                  <span key={n}>{n}</span>
-                ))}
+                <span>Sub 505 Level</span>
+                <span>805+ Level</span>
               </div>
             </div>
           </div>

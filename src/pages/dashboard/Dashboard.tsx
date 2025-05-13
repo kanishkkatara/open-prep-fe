@@ -13,6 +13,8 @@ import ProgressCircle from "../../components/ui/ProgressCircle";
 import { useUser } from "../../context/UserContext";
 import { DashboardData, RawStudyPlanItem } from "../../lib/types";
 import { getDashboard } from "../../lib/api";
+import { Rocket, Sparkles } from "lucide-react";
+
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -68,7 +70,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <main className="space-y-10 px-6 py-8">
-
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {[
@@ -116,13 +117,33 @@ const Dashboard: React.FC = () => {
         <Card className="lg:col-span-2">
           <CardHeader className="flex items-center justify-between px-6 py-4">
             <CardTitle>Your Study Plan</CardTitle>
-            {/* <Button variant="outline" size="sm" leftIcon={<Calendar size={14} />} className="whitespace-nowrap">
-      Full Plan
-    </Button> */}
+            <span className="inline-flex items-center gap-1 text-xs text-white bg-gradient-to-l from-blue-500 to-purple-500 px-2 py-1 rounded">
+              <Sparkles size={12} className="text-white" />
+              Powered by Clara AI
+            </span>
           </CardHeader>
+
           <CardContent className="px-6 py-4">
-            <p className="text-center text-gray-500 py-8">Coming soon</p>
+            <div className="relative">
+              <div className="flex flex-col items-center justify-center text-center py-10 space-y-4">
+                <div className="text-purple-600">
+                <div className="text-purple-600 animate-pulse">
+  <Rocket size={32} strokeWidth={2} />
+</div>
+                </div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Good things take time.
+                </h2>
+                <p className="text-sm text-gray-500 max-w-md">
+                  Your personalized study plan is on the way. Until then, start
+                  practicing from our <strong>Question Bank</strong> of{" "}
+                  <strong>1000+ questions</strong> — and if you get stuck, just
+                  ask Clara AI for help!
+                </p>
+              </div>
+            </div>
           </CardContent>
+
           {/* <CardContent className="px-6 py-4">
             {modules.length === 0 ? (
               <p className="text-center text-gray-500 py-8">

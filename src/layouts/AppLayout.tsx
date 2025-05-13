@@ -80,7 +80,8 @@ const AppLayoutContent: React.FC = () => {
   const title = currentNav?.label;
   let subtitle = currentNav?.subtitle;
   if (location.pathname === "/app/dashboard" && user) {
-    subtitle = `Welcome back, ${user.name}! Here’s your study progress.`;
+    const firstName = user.name?.split(" ")[0] || "there";
+    subtitle = `Welcome back, ${firstName}! Here’s your study progress.`;
   }
 
   // Determine if we're on an individual question detail page
@@ -98,7 +99,7 @@ const AppLayoutContent: React.FC = () => {
   useEffect(() => {
     if (isQuestionPage) {
       setSidebarOpen(false);
-      setChatOpen(false); // TODO: change it to true
+      setChatOpen(true);
     } else {
       setSidebarOpen(true);
       setChatOpen(false);
@@ -219,7 +220,14 @@ const AppLayoutContent: React.FC = () => {
                   className="group flex items-center px-4 py-2 rounded-lg text-gray-400 bg-gray-50 cursor-not-allowed hover:bg-gray-100"
                 >
                   <span className="mr-3">{icon}</span>
-                  <span className="font-medium">{label}</span>
+
+                  <span className="relative w-full font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                    {label}
+
+                    <span className="absolute right-0 top-0 text-[10px] text-white bg-gray-400 px-2 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      Coming Soon
+                    </span>
+                  </span>
                 </div>
               ) : (
                 <NavLink
@@ -324,10 +332,10 @@ const AppLayoutContent: React.FC = () => {
       {!chatOpen && (
         <button
           onClick={() => setChatOpen(true)}
-          className="fixed bottom-4 right-4 p-2 bg-white rounded shadow z-20"
+          className="fixed bottom-4 right-4 p-2 rounded shadow z-20 bg-gradient-to-l from-blue-500 to-purple-500"
           aria-label="Open AI Tutor"
         >
-          <Bot size={28} />
+          <Bot size={32} className="text-white" />
         </button>
       )}
 

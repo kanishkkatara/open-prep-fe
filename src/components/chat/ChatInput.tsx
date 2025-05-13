@@ -26,18 +26,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
   
   return (
-    <form onSubmit={handleSubmit} className="border-t border-gray-200 p-4">
-      {isTyping && (
-        <div className="flex items-center text-sm text-gray-500 mb-2">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-          </div>
-          <span className="ml-2">AI assistant is typing...</span>
-        </div>
-      )}
-      
+    <form onSubmit={handleSubmit} className="border-t border-gray-200 p-4">      
       <div className="flex items-center space-x-2">
         <input
           type="text"
@@ -53,7 +42,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           className={`p-2 rounded-r-md ${
             !message.trim() || disabled || isTyping
               ? 'bg-gray-300 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 transition-colors'
+              : ' bg-gradient-to-l from-blue-500 to-purple-500'
           }`}
         >
           <Send size={20} className="text-white" />
