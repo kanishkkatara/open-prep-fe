@@ -1,7 +1,7 @@
-import React from 'react';
-import ReactMarkdown from 'react-markdown';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Bot } from 'lucide-react';
+import { renderContent } from '../../lib/utils';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -11,7 +11,20 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isNew = false }) => {
   const isUser = role === 'user';
-  
+  const [html, setHtml] = useState<string>('Loading...');
+
+  useEffect(() => {
+    let mounted = true;
+
+    renderContent(content).then(result => {
+      if (mounted) setHtml(result);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [content]);
+
   return (
     <motion.div
       initial={isNew ? { opacity: 0, y: 20 } : undefined}
@@ -19,7 +32,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isNew = false 
       transition={{ duration: 0.3 }}
       className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
     >
-      <div className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} max-w-[85%]`}>  
+      <div className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} max-w-[85%]`}>
         <div
           className={`flex-shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${
             isUser ? 'bg-blue-100 ml-2' : 'bg-purple-100 mr-2'
@@ -38,17 +51,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ role, content, isNew = false 
               ? 'bg-blue-600 text-white rounded-tr-none'
               : 'bg-gray-100 text-gray-800 rounded-tl-none'
           }`}
-        >
-          <ReactMarkdown
-            components={{
-              p: ({ node, ...props }) => (
-                <p className="my-2 leading-tight" {...props} />
-              ),
-            }}
-          >
-            {content}
-          </ReactMarkdown>
-        </div>
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
       </div>
     </motion.div>
   );
