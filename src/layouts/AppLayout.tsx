@@ -45,7 +45,7 @@ const navLinks: NavItemProps[] = [
     path: "/app/dashboard",
     subtitle: "Your performance at a glance",
   },
-  { icon: <BookOpen />, label: "Question Bank", path: "/app/questions" },
+  { icon: <Graduate />, label: "Question Bank", path: "/app/questions" },
   { icon: <School />, label: "Practice Tests", comingSoon: true },
   { icon: <BarChart2 />, label: "Analytics", comingSoon: true },
   { icon: <Calculator />, label: "Study Plan", comingSoon: true },
@@ -206,7 +206,7 @@ const AppLayoutContent: React.FC = () => {
           style={{ width: `${leftPct}%` }}
         >
           <div className="p-4 flex items-center border-b">
-            <Graduate size={28} className="text-blue-600 mr-2" />
+            <BookOpen size={28} className="text-blue-600 mr-2" />
             <h1 className="text-2xl font-bold flex-1">OpenPrep</h1>
             <button onClick={() => setSidebarOpen(false)} className="p-1">
               <ChevronLeft size={20} />
