@@ -74,10 +74,10 @@ function App() {
 
         {/* Main App: must be logged in */}
         <Route path="/app" element={<AuthenticatedRoute />}>
-          <Route element={<AppLayout />}>
             {/* Public billing flows: anyone logged in */}
             <Route path="pricing" element={<PricingPage />} />
             <Route path="checkout" element={<CheckoutPage />} />
+          <Route element={<AppLayout />}>
 
             {/* Subscriber-only pages: must have active/trial subscription */}
             <Route element={<SubscriberRoute />}>
@@ -93,7 +93,7 @@ function App() {
             </Route>
 
             {/* Fallback under /app */}
-            <Route path="*" element={<Navigate to="pricing" replace />} />
+            <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Route>
         </Route>
 
