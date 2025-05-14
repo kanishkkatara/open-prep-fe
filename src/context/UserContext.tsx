@@ -12,6 +12,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  country?: string;
   isOnboarded: boolean;
   targetScore: number;
   examDate: Date | null;
@@ -188,6 +189,7 @@ function mapServerUserToProfile(u: any): UserProfile {
     id: String(u.id),
     name: u.name,
     email: u.email,
+    country: u.country,
     isOnboarded: u.isOnboarded ?? defaultUser.isOnboarded,
     targetScore: u.targetScore ?? defaultUser.targetScore,
     examDate: u.examDate ? new Date(u.examDate) : null,

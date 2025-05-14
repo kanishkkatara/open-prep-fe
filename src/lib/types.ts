@@ -74,9 +74,11 @@ export type DashboardData = {
 export interface BasicSettings {
   name: string;
   email: string;
+  country: string;
   target_score: number;
   exam_date: string | null;
   previous_score: number | null;
+  onboarding_completed: boolean;
 }
 
 export interface NotificationSettings {
