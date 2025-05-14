@@ -61,11 +61,11 @@ const Login: React.FC = () => {
     <div>
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-gray-900">
-          Log in to your account
+          Log in / Sign up
         </h2>
-        <p className="text-gray-600 mt-2">
+        {/* <p className="text-gray-600 mt-2">
           Welcome back! Please enter your details.
-        </p>
+        </p> */}
       </div>
 
       {error && (
@@ -75,7 +75,7 @@ const Login: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <Input
+        {/* <Input
           label="Email"
           type="email"
           id="email"
@@ -95,9 +95,9 @@ const Login: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           leftIcon={<Lock size={18} className="text-gray-500" />}
           required
-        />
+        /> */}
 
-        <div className="flex items-center justify-between">
+        {/* <div className="flex items-center justify-between">
           <div className="flex items-center">
             <input
               id="remember-me"
@@ -121,9 +121,9 @@ const Login: React.FC = () => {
               Forgot password?
             </a>
           </div>
-        </div>
+        </div> */}
 
-        <Button
+        {/* <Button
           type="submit"
           className="w-full"
           isLoading={isLoading}
@@ -138,7 +138,7 @@ const Login: React.FC = () => {
             Or continue with
           </span>
           <div className="flex-grow border-t border-gray-300"></div>
-        </div>
+        </div> */}
 
         <div className="flex justify-center">
           <GoogleLogin
@@ -148,7 +148,7 @@ const Login: React.FC = () => {
           />
         </div>
 
-        <p className="text-center text-sm text-gray-600 mt-2">
+        {/* <p className="text-center text-sm text-gray-600 mt-2">
           Don't have an account?{" "}
           <Link
             to="/auth/register"
@@ -156,7 +156,7 @@ const Login: React.FC = () => {
           >
             Create an account
           </Link>
-        </p>
+        </p> */}
       </form>
     </div>
   );
