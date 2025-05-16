@@ -5,9 +5,10 @@ import ChatMessage from './ChatMessage'
 import ChatInput from './ChatInput'
 import TypingIndicator from './TypingIndicator'
 import { useAITutor } from '../../context/AITutorContext'
+import { predefinedQuestions } from '../../lib/predefinedQuestions'
 
 const ChatSidebar: React.FC = () => {
-  const { messages, isTyping, sendMessage } = useAITutor()
+  const { messages, isTyping, sendMessage, screenContext } = useAITutor()
   const listRef = useRef<HTMLDivElement>(null)
   const endRef = useRef<HTMLDivElement>(null)
 
@@ -23,6 +24,34 @@ const ChatSidebar: React.FC = () => {
       endRef.current.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, isTyping])
+const currentQuestions = (() => {
+  if (!screenContext?.type || !Array.isArray(screenContext.tags)) {
+    return [];
+  }
+
+  // Find the question set for the specified type
+  const questionSet = predefinedQuestions.find(q => q.type === screenContext.type);
+  if (!questionSet) return [];
+
+  // Find the generic question set
+  const genericSet = predefinedQuestions.find(q => q.type === 'generic');
+
+  // Filter tags from questionSet matching any tag in screenContext.tags
+  const matchedTags = questionSet.tags.filter(tagObj =>
+    screenContext.tags.includes(tagObj.tag)
+  );
+
+  // Extract and flatten all questions from these matched tags
+  const typeQuestions = matchedTags.flatMap(tagObj => tagObj.questions);
+
+  // Extract and flatten all generic questions
+  const genericQuestions = genericSet
+    ? genericSet.tags.flatMap(tagObj => tagObj.questions)
+    : [];
+
+  // Combine generic questions with type-specific questions
+  return [...typeQuestions, ...genericQuestions];
+})();
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -32,14 +61,9 @@ const ChatSidebar: React.FC = () => {
       <div ref={listRef} className="flex-1 overflow-y-auto p-4 min-h-0">
         {messages.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <HelpCircle
-              size={36}
-              className="mx-auto mb-4 text-gray-400"
-            />
+            <HelpCircle size={36} className="mx-auto mb-4 text-gray-400" />
             <p className="font-medium">Need help?</p>
-            <p className="text-sm mt-2">
-              Ask Clara to:
-            </p>
+            <p className="text-sm mt-2">Ask Clara to:</p>
             <ul className="text-sm text-gray-500 list-disc list-inside space-y-1 mt-2">
               <li>Break down problems step-by-step</li>
               <li>Request targeted hints without giving away answers</li>
@@ -68,6 +92,44 @@ const ChatSidebar: React.FC = () => {
           </div>
         )}
       </div>
+{messages.length === 0 ? (
+  <div className="text-left p-6">
+    <div
+      className="flex flex-nowrap gap-3 max-w-full overflow-x-auto overflow-y-hidden"
+      style={{ maxHeight: '5.5rem' }} // approx height for 2 rows of buttons, adjust as needed
+    >
+      {currentQuestions.length > 0 &&
+        currentQuestions.map((q, i) => (
+          <button
+            key={i}
+            onClick={() => sendMessage(q)}
+            className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm hover:bg-blue-200 transition shadow-sm flex-shrink-0"
+            title={q}
+            type="button"
+          >
+            {q}
+          </button>
+        ))}
+    </div>
+  </div>
+) : (
+  <div className="text-left p-2 overflow-x-auto whitespace-nowrap max-w-full">
+    {currentQuestions.length > 0 &&
+      currentQuestions.map((q, i) => (
+        <button
+          key={i}
+          onClick={() => sendMessage(q)}
+          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs hover:bg-blue-200 transition shadow-sm mx-2 inline-block"
+          title={q}
+          type="button"
+        >
+          {q}
+        </button>
+      ))}
+  </div>
+)}
+
+
 
       {/* Input */}
       <div className="border-t border-gray-200">

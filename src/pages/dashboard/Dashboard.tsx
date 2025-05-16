@@ -15,7 +15,6 @@ import { DashboardData, RawStudyPlanItem } from "../../lib/types";
 import { getDashboard } from "../../lib/api";
 import { Rocket, Sparkles } from "lucide-react";
 
-
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
@@ -127,9 +126,9 @@ const Dashboard: React.FC = () => {
             <div className="relative">
               <div className="flex flex-col items-center justify-center text-center py-10 space-y-4">
                 <div className="text-purple-600">
-                <div className="text-purple-600 animate-pulse">
-  <Rocket size={32} strokeWidth={2} />
-</div>
+                  <div className="text-purple-600 animate-pulse">
+                    <Rocket size={32} strokeWidth={2} />
+                  </div>
                 </div>
                 <h2 className="text-lg font-semibold text-gray-800">
                   Good things take time.
@@ -173,7 +172,7 @@ const Dashboard: React.FC = () => {
               strokeWidth={10}
               valueClassName="text-xl"
             />
-            {overall.average === 0 ? (
+            {stats.questionsCompleted === 0 ? (
               <p className="mt-4 text-gray-500 text-sm">
                 Answer some questions to see progress.
               </p>

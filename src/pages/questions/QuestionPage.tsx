@@ -108,7 +108,7 @@ const QuestionPage: React.FC = () => {
 
     if (displayed) {
       setDropdownValues(Array(displayed.content.length).fill(null));
-      setScreenContext({ id: question!.id, parent_id: question!.parent?.id });
+      setScreenContext({ id: question!.id, parent_id: question!.parent?.id, type: question!.parent?.type || question!.type, tags: question?.tags });
     }
   }, [displayed, question, setScreenContext]);
 
@@ -258,12 +258,23 @@ const QuestionPage: React.FC = () => {
           <span className="text-lg">{`${mm}:${ss}`}</span>
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={handleToggleFlag}>
-            <Flag
-              size={18}
-              className={flagged ? "text-red-500" : "text-gray-400"}
-            />
-          </button>
+          <div className="relative group inline-block">
+            <button onClick={handleToggleFlag}>
+              <Flag
+                size={18}
+                className={`transition-colors ${
+                  flagged
+                    ? "text-red-500 group-hover:text-red-600"
+                    : "text-gray-400 group-hover:text-gray-600"
+                }`}
+              />
+            </button>
+            <span
+              className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            >
+              {flagged ? "Unflag this question" : "Flag this question"}
+            </span>
+          </div>
           <X size={18} onClick={() => navigate("/app/questions")} />
         </div>
       </div>
@@ -305,6 +316,9 @@ const QuestionPage: React.FC = () => {
           />
 
           <div className="flex justify-between">
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Previous
+            </Button>
             {!submitted ? (
               <Button
                 onClick={onSubmit}

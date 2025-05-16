@@ -3,6 +3,9 @@ import katex from "katex";
 import "katex/dist/katex.min.css";
 import { Card, CardContent } from "../../components/ui/Card";
 import type { ContentBlock, CellCoordinate, SingleQuestion } from "../../lib/types";
+import { useTextSelection } from "../../hooks/useTextSelection";
+import { useAITutor } from "../../context/AITutorContext";
+import { Sparkles } from "lucide-react";
 
 interface QuestionDisplayProps {
   question: SingleQuestion;
@@ -14,6 +17,40 @@ interface QuestionDisplayProps {
   onDropdownChange: (blockIndex: number, selectedOptionIndex: number) => void;
   isSubmitted: boolean;
 }
+
+const FloatingExplainButton = () => {
+  const { text, rect } = useTextSelection();
+  const { sendMessage } = useAITutor();
+
+  const trimmedText = text?.trim();
+  const isSingleWord = trimmedText && trimmedText.split(/\s+/).length === 1;
+
+  const handleExplainClick = () => {
+    if (trimmedText) {
+      const prompt = isSingleWord
+        ? `Can you define the word "${trimmedText}"?`
+        : `Can you explain the following text: "${trimmedText}"?`;
+      sendMessage(prompt);
+    }
+  };
+
+  if (!trimmedText || !rect) return null;
+
+  return (
+    <button
+      onClick={handleExplainClick}
+      className="absolute z-50 text-white px-3 py-1 rounded shadow bg-gradient-to-l from-blue-500 to-purple-500 transition flex items-center gap-1"
+      style={{
+        top: `${window.scrollY + rect.bottom + 8}px`,
+        left: `${window.scrollX + rect.left}px`,
+      }}
+    >
+      <Sparkles size={12} className="text-white" />
+      {isSingleWord ? "Define" : "Explain"}
+    </button>
+  );
+};
+
 
 const renderContent = (text: string = ""): string =>
   text.replace(/\\\((.+?)\\\)/g, (_, expr) =>
@@ -218,6 +255,7 @@ const correctChoices: number[] = (() => {
   return (
     <Card>
       <CardContent className="pt-6">
+        <FloatingExplainButton />
         <div className="mb-6">{content.map(renderBlock)}</div>
 
         {/* For MCQ (and not two-part), render options as before */}
