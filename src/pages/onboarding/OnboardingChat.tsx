@@ -50,7 +50,10 @@ const OnboardingChat: React.FC = () => {
         setExamDate(data.exam_date ?? null);
         setPreviousScore(data.previous_score ?? null);
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error("Error fetching basic settings:", err);
+        toast.error("Failed to load basic settings.");
+      });
   }, [user?.id]);
 
   useEffect(() => {
@@ -110,7 +113,8 @@ const OnboardingChat: React.FC = () => {
         setProgress(prev => Math.min(prev + 20, 95));
       }
     } catch (err) {
-      console.error("Chat API failed", err);
+      console.error("Error sending message:", err);
+      toast.error("An error occurred while sending the message.");
       setMessages(prev => [
         ...prev,
         { id: crypto.randomUUID(), role: "assistant", content: "Sorry, something went wrong!", isNew: true },
@@ -302,7 +306,7 @@ const OnboardingChat: React.FC = () => {
 
         {/* Chat Messages */}
         <div className="flex-1 p-4 overflow-y-auto">
-          {messages.map((message, index) => (
+          {messages.map((message) => (
             <ChatMessage key={message.id} content={message.content} role={message.role} isNew={message.isNew} />
           ))}
           {isTyping && <TypingIndicator />}

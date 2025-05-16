@@ -27,6 +27,7 @@ import type {
   CellCoordinate,
   Annotation,
 } from "../../lib/types";
+import toast from "react-hot-toast";
 
 const QuestionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -63,7 +64,10 @@ const QuestionPage: React.FC = () => {
         setQuestion(q);
         setFlagged(q.is_deleted);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("Failed to fetch question:", err);
+        toast.error("Fasiled to load question. Please try again.");
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -195,7 +199,8 @@ const QuestionPage: React.FC = () => {
       const resp = await submitAnswer(displayed.id, payload);
       setNextQid(resp.next_question_id || null);
     } catch (e) {
-      console.error(e);
+      console.error("Submit answer failed:", e);
+      toast.error("Failed to submit answer. Please try again.");
     }
   };
 
@@ -218,6 +223,7 @@ const QuestionPage: React.FC = () => {
       setFlagged(!flagged);
     } catch (e) {
       console.error("Flag toggle failed:", e);
+      toast.error("Failed to update flag status. Please try again.");
     }
   };
   const handleShowExplanation = async () => {

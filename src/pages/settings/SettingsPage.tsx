@@ -8,11 +8,14 @@ import {
 } from "../../lib/api";
 import { BasicSettings, NotificationSettings } from "../../lib/types";
 import { Loader } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function SettingsPage() {
   const [basic, setBasic] = useState<BasicSettings>({
     name: "",
     email: "",
+    country: "",
+    onboarding_completed: true,
     target_score: 700,
     exam_date: null,
     previous_score: null,
@@ -33,7 +36,8 @@ export default function SettingsPage() {
         setBasic({ ...b, exam_date: b.exam_date?.slice(0, 10) ?? null });
         setNotify(n);
       } catch (e) {
-        console.error(e);
+        console.error("Error loading settings:", e);
+        toast.error("Failed to load settings.");
       } finally {
         setLoading(false);
       }

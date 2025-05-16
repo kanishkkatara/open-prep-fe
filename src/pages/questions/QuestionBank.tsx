@@ -11,6 +11,7 @@ import Button from "../../components/ui/Button";
 import { Card, CardContent } from "../../components/ui/Card";
 import { questionCategories } from "../../lib/questionCategories";
 import { Loader } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface Option {
   value: string;
@@ -101,7 +102,10 @@ const QuestionBank: React.FC = () => {
         if (!isCurrent) return; // ← ignore if a newer fetch was started
         setQuestions(data.filter((q) => !q.parentId));
       } catch (e) {
-        if (isCurrent) console.error(e);
+        if (isCurrent) {
+          console.error("Error fetching questions:", e);
+          toast.error("Failed to fetch questions.");
+        }
       } finally {
         if (isCurrent) setLoading(false);
       }

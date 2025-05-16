@@ -14,6 +14,7 @@ import { useUser } from "../../context/UserContext";
 import { DashboardData, RawStudyPlanItem } from "../../lib/types";
 import { getDashboard } from "../../lib/api";
 import { Rocket, Sparkles } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -39,7 +40,10 @@ const Dashboard: React.FC = () => {
         setRawPlan(data.studyPlan);
         setOverall(data.overallProgress);
       })
-      .catch(console.error);
+      .catch((err) => {
+        console.error("Error fetching dashboard data:", err);
+        toast.error("Failed to load dashboard data.");
+      });
   }, []);
 
   const handleModuleClick = (id: string) => navigate(`/app/questions/${id}`);

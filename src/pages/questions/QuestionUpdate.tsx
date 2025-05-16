@@ -16,6 +16,7 @@ import { Card, CardContent } from '../../components/ui/Card';
 import { Loader } from 'lucide-react';
 import { questionCategories } from '../../lib/questionCategories';
 import 'tailwindcss/tailwind.css';
+import toast from 'react-hot-toast';
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -98,7 +99,8 @@ const EditAndPreviewWithBank: React.FC = () => {
         if (!active) return;
         setSummaries(data.filter(q => !q.parentId));
       } catch (e) {
-        console.error(e);
+        console.error("Error fetching questions:", e);
+        toast.error("Failed to fetch questions");
       } finally {
         if (active) setBankLoading(false);
       }

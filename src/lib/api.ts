@@ -45,55 +45,80 @@ function getAuthHeaders() {
   };
 }
 
+async function handleApiError(response: Response): Promise<never> {
+  let errorMessage = `Request failed with status ${response.status}`;
+  
+  try {
+    const errorData = await response.json();
+    if (errorData.detail) {
+      errorMessage = errorData.detail;
+    }
+    throw new Error(errorMessage);
+  } catch {
+    throw new Error(errorMessage);
+  }
+}
+
 async function authFetch(
   input: RequestInfo,
   init: RequestInit = {},
   isRetry = false
 ): Promise<Response> {
-  const res = await fetch(input, {
-    ...init,
-    headers: { ...(init.headers || {}), ...getAuthHeaders() },
-    credentials: init.credentials,
-  });
+  try {
+    const res = await fetch(input, {
+      ...init,
+      headers: { ...(init.headers || {}), ...getAuthHeaders() },
+      credentials: init.credentials,
+    });
 
-  if (res.status !== 401) {
+    if (!res.ok && res.status !== 401) {
+      return handleApiError(res);
+    }
+
+    if (res.status === 401) {
+      if (isRetry) {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        window.location.href = "/auth/login";
+        throw new Error("Session expired");
+      }
+
+      const refreshToken = getRefreshToken();
+      if (!refreshToken) {
+        localStorage.removeItem("access_token");
+        window.location.href = "/auth/login";
+        throw new Error("No refresh token");
+      }
+
+      const refreshRes = await fetch(`${BASE_URL}/api/users/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+
+      if (!refreshRes.ok) {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        window.location.href = "/auth/login";
+        throw new Error("Refresh failed");
+      }
+
+      const newTokens = (await refreshRes.json()) as {
+        access_token: string;
+        refresh_token?: string;
+      };
+      saveTokens(newTokens);
+
+      return authFetch(input, init, true);
+    }
+
     return res;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw error;
   }
-
-  if (isRetry) {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    window.location.href = "/auth/login";
-    throw new Error("Session expired");
-  }
-
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    localStorage.removeItem("access_token");
-    window.location.href = "/auth/login";
-    throw new Error("No refresh token");
-  }
-
-  const refreshRes = await fetch(`${BASE_URL}/api/users/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-
-  if (!refreshRes.ok) {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    window.location.href = "/auth/login";
-    throw new Error("Refresh failed");
-  }
-
-  const newTokens = (await refreshRes.json()) as {
-    access_token: string;
-    refresh_token?: string;
-  };
-  saveTokens(newTokens);
-
-  return authFetch(input, init, true);
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────────
@@ -139,7 +164,6 @@ export async function sendChatMessage(params: {
 
 export async function fetchQuestions(limit = 100): Promise<Question[]> {
   const res = await authFetch(`${BASE_URL}/api/questions?limit=${limit}`);
-  if (!res.ok) throw new Error(`Failed to fetch questions: ${res.status}`);
   return res.json();
 }
 
@@ -159,8 +183,6 @@ export async function submitAnswer(
       body: JSON.stringify(params),
     }
   );
-
-  if (!res.ok) throw new Error("Failed to submit answer");
   return res.json();
 }
 
@@ -195,8 +217,6 @@ export async function fetchQuestionSummaries(params: {
   if (progress_filter) qs.set("progress_filter", progress_filter);
 
   const res = await authFetch(`${BASE_URL}/api/questions?${qs}`);
-  if (!res.ok) throw new Error("Failed to fetch question summaries");
-
   return res.json();
 }
 
@@ -205,13 +225,11 @@ export async function fetchQuestionById(
 ): Promise<QuestionResponse> {
   const url = new URL(`${BASE_URL}/api/questions/${questionId}`);
   const res = await authFetch(url.toString());
-  if (!res.ok) throw new Error(`Failed to fetch question ${questionId}`);
   return res.json();
 }
 
 export async function getDashboard(): Promise<DashboardData> {
   const res = await authFetch(`${BASE_URL}/api/dashboard`);
-  if (!res.ok) throw new Error(`Failed to fetch dashboard: ${res.status}`);
   return res.json();
 }
 
@@ -219,7 +237,6 @@ export async function getBasicSettings(): Promise<BasicSettings> {
   const res = await authFetch(`${BASE_URL}/api/settings/basic`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Could not fetch basic settings");
   return res.json();
 }
 
@@ -231,7 +248,6 @@ export async function updateBasicSettings(
     credentials: "include",
     body: JSON.stringify(settings),
   });
-  if (!res.ok) throw new Error("Could not update basic settings");
   return res.json();
 }
 
@@ -239,7 +255,6 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
   const res = await authFetch(`${BASE_URL}/api/settings/notifications`, {
     credentials: "include",
   });
-  if (!res.ok) throw new Error("Could not fetch notification settings");
   return res.json();
 }
 
@@ -251,7 +266,6 @@ export async function updateNotificationSettings(
     credentials: "include",
     body: JSON.stringify(settings),
   });
-  if (!res.ok) throw new Error("Could not update notification settings");
   return res.json();
 }
 
@@ -266,9 +280,6 @@ export async function updateQuestionIsDeleted(
       body: JSON.stringify({ is_deleted }),
     }
   );
-  if (!res.ok) {
-    throw new Error(`Failed to update isdeleted: ${res.status}`);
-  }
   return res.json();
 }
 
@@ -278,10 +289,6 @@ export async function fetchQuestionRaw(
   const res = await authFetch(
     `${BASE_URL}/api/questions/update/${questionId}`
   );
-  if (!res.ok)
-    throw new Error(
-      `Failed to fetch raw question: ${res.status} ${res.statusText}`
-    );
   return res.json();
 }
 
@@ -297,10 +304,6 @@ export async function updateQuestionRaw(
       body: JSON.stringify(payload),
     }
   );
-  if (!res.ok)
-    throw new Error(
-      `Failed to update question: ${res.status} ${res.statusText}`
-    );
   return res.json();
 }
 
@@ -311,7 +314,6 @@ export async function updateQuestionRaw(
  */
 export async function fetchPlans(): Promise<Plan[]> {
   const res = await authFetch(`${BASE_URL}/api/billing/plans`);
-  if (!res.ok) throw new Error("Failed to load plans");
   return res.json();
 }
 
@@ -322,7 +324,6 @@ export async function startFreeTrial(): Promise<Subscription> {
   const res = await authFetch(`${BASE_URL}/api/billing/trial`, {
     method: "POST",
   });
-  if (!res.ok) throw new Error("Failed to start free trial");
   return res.json();
 }
 
@@ -340,7 +341,6 @@ export async function createOrder(
       body: JSON.stringify({ plan_id: planId }),
     }
   );
-  if (!res.ok) throw new Error("Failed to create payment order");
   return res.json();
 }
 
@@ -349,6 +349,5 @@ export async function createOrder(
  */
 export async function fetchMySubscription(): Promise<Subscription> {
   const res = await authFetch(`${BASE_URL}/api/billing/me`);
-  if (!res.ok) throw new Error("Failed to fetch subscription");
   return res.json();
 }

@@ -6,12 +6,12 @@ import CheckoutForm from "./CheckoutForm";
 import LoadingScreen from "../../components/ui/LoadingScreen";
 import { fetchPlans } from "../../lib/api";
 import type { Plan } from "../../lib/types";
+import toast from "react-hot-toast";
 
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const { search } = useLocation();
   const [plan, setPlan] = useState<Plan | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(search);
@@ -29,17 +29,9 @@ const CheckoutPage: React.FC = () => {
         setPlan(found);
       })
       .catch((err) => {
-        setError(err.message);
+        toast.error(err.message);
       });
   }, [search, navigate]);
-
-  if (error) {
-    return (
-      <div className="max-w-md mx-auto p-6 text-red-600">
-        Error: {error}
-      </div>
-    );
-  }
 
   if (!plan) {
     return <LoadingScreen />;

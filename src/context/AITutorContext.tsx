@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useCallback } from "react";
 import { generateId } from "../lib/utils";
 import { sendChatMessage } from "../lib/api";
 import { useUser } from "./UserContext";
+import toast from "react-hot-toast";
 
 export interface Message {
   id: string;
@@ -62,7 +63,8 @@ export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({
 
       try {
         if (!user) {
-          console.error("Cannot send message – no user in context");
+          console.error("User not logged in");
+          toast.error("You need to be logged in to use the tutor.");
           return;
         }
         const userId = user.id.toString();
@@ -88,7 +90,8 @@ export const AITutorProvider: React.FC<{ children: React.ReactNode }> = ({
         };
         setMessages((prev) => [...prev, assistantMsg]);
       } catch (err) {
-        console.error("Tutor error:", err);
+        console.error("Error sending message:", err);
+        toast.error("An error occurred while sending the message.");
         setMessages((prev) => [
           ...prev,
           {

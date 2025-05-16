@@ -4,26 +4,26 @@ import { fetchPlans, startFreeTrial, fetchMySubscription } from "../../lib/api";
 import { Plan, Subscription } from "../../lib/types";
 import { Loader, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 const PricingPage: React.FC = () => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [hasUsedTrial, setHasUsedTrial] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPlans()
       .then(setPlans)
-      .catch((err) => setError(err.message))
+      .catch((err) => toast.error(err.message))
       .finally(() => setLoading(false));
 
     fetchMySubscription()
       .then((sub: Subscription | null) => {
-        if (sub && sub.plan_id === null) setHasUsedTrial(true);
+        setHasUsedTrial(!!sub);
       })
       .catch((err: any) => {
-        if (!err.message.includes("404")) setError(err.message);
+        if (!err.message.includes("404")) toast.error(err.message);
       });
   }, []);
 
@@ -32,7 +32,9 @@ const PricingPage: React.FC = () => {
       await startFreeTrial();
       navigate("/app/dashboard");
     } catch (err: any) {
-      setError(err.message);
+      if (err.message.includes("already used")) {
+        setHasUsedTrial(true);
+      }
     }
   };
 
@@ -52,10 +54,6 @@ const PricingPage: React.FC = () => {
         <Loader size={48} className="animate-spin text-gray-500" />
       </div>
     );
-  }
-
-  if (error) {
-    return <div className="text-red-600 p-8">Error: {error}</div>;
   }
 
   return (
