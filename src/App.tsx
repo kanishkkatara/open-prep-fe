@@ -29,9 +29,12 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AuthenticatedRoute from "./components/auth/AuthenticatedRoute";
 import SubscriberRoute from "./components/auth/SubscriberRoute";
 import LoadingScreen from "./components/ui/LoadingScreen";
+import { useGtagPageTracking } from "./hooks/useGtagPageTracking";
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+
+  useGtagPageTracking();
 
   useEffect(() => {
     // Simulate app initialization

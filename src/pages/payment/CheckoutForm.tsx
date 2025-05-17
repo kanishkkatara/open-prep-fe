@@ -1,14 +1,6 @@
-// src/components/CheckoutForm.tsx
-
 import React, { useState } from "react";
 import { Plan } from "../../lib/types";
 import { createOrder } from "../../lib/api";
-
-declare global {
-  interface Window {
-    Razorpay?: any;
-  }
-}
 
 interface CheckoutFormProps {
   plan: Plan;
@@ -30,23 +22,31 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ plan, onBack }) => {
     setError(null);
 
     try {
-      // 1️⃣ Create an order on the backend
+      // 1️⃣ Create an order from the backend
       const order = await createOrder(plan.id);
       const { gateway_order_id, amount_cents, currency } = order;
 
       // 2️⃣ Configure Razorpay options
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY,       // your Razorpay Key ID
-        amount: amount_cents,                         // amount in paisa
-        currency: currency,
+        key: import.meta.env.VITE_RAZORPAY_KEY,
+        amount: amount_cents,
+        currency,
         name: "OpenPrep",
         description: `${plan.name} Subscription`,
         order_id: gateway_order_id,
         handler: (response: any) => {
-          // Called on successful payment
           setSucceeded(true);
+
+          // ✅ Google Ads Conversion Tracking
+          if (window.gtag) {
+            window.gtag("event", "conversion", {
+              send_to: "AW-17086379635/purchase", // Replace with your conversion label
+              value: amount_cents / 100,
+              currency,
+              transaction_id: response.razorpay_payment_id,
+            });
+          }
         },
-        // handle failures
         modal: {
           ondismiss: () => {
             setError("Payment popup closed. Please complete payment to subscribe.");
@@ -54,14 +54,14 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ plan, onBack }) => {
         },
       };
 
-      // 3️⃣ Open the Razorpay checkout
+      // 3️⃣ Open Razorpay
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", (resp: any) => {
         setError(resp.error.description || "Payment failed");
       });
       rzp.open();
-    } catch (e: any) {
-      setError(e.message || "Something went wrong");
+    } catch (err: any) {
+      setError(err.message || "Something went wrong.");
     } finally {
       setLoading(false);
     }
